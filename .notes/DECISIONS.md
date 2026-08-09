@@ -3126,6 +3126,86 @@ Tidak ada
 
 ---
 
+## DEC-0118 — Gate publik deterministik, gate integrasi terpisah
+
+**Status:** AKTIF  
+**Phase:** 1/16  
+**Tanggal:** 2026-08-10
+
+### Masalah
+Seluruh run Quality Gate merah sementara gate lokal hijau. Penyebabnya `describe.skipIf` tetap menjalankan badan callback untuk mengumpulkan test, sehingga client Supabase dibuat dengan nilai kosong di CI dan melempar sebelum apa pun sempat dilewati. Di baliknya ada persoalan yang lebih besar: repositori ini publik, dan test yang menembak database produksi tidak boleh berjalan pada pull request dari siapa pun.
+
+### Keputusan
+Dua gate terpisah. `pnpm check` deterministik, tanpa kredensial, dan itulah yang dijalankan CI. `pnpm gate:integrasi` menjalankan test yang menembak database sungguhan plus seluruh suite SQL, dan wajib dijalankan sebelum deploy. Build di CI memakai nilai environment palsu yang jelas-jelas bukan project mana pun.
+
+### Alasan
+Mematikan test agar hijau adalah status palsu. Memasukkan kredensial produksi ke CI publik memperluas permukaan serang tanpa imbalan sepadan.
+
+### Dampak
+CI tidak menangkap regresi RLS. Itu ditebus dengan menjadikan `pnpm gate:integrasi` syarat sebelum deploy, dan dicatat terbuka di STATUS — bukan disembunyikan.
+
+### Blueprint terkait
+`.github/workflows/quality.yml`, `vitest.config.mts`, `vitest.integration.mts`, `scripts/db-test.mjs`
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0119 — Arah visual OBSIDIAN AURORA dan wordmark JEJAK
+
+**Status:** AKTIF  
+**Phase:** 4  
+**Tanggal:** 2026-08-10
+
+### Masalah
+Arah abu hangat dengan aksen emas terbaca kusam dan murah, bukan premium. Merek juga tampil sebagai teks biasa sehingga tidak punya identitas.
+
+### Keputusan
+Palet berpindah ke gelap dingin: canvas `#061015`, permukaan `#0B171D`/`#102029`, teks `#F2F8FA`/`#93AAB3`, aksen `#52D7FF`, mint `#65F0C5`, ice `#CFF7FF`, violet `#8F87FF` sangat sedikit. Emas turun pangkat jadi warna peringatan dan status langka saja. Token disusun dua lapis — nilai mentah lalu nama semantik — dan komponen dilarang menulis hex.
+
+Merek selalu `JEJAK` lewat komponen `Wordmark`: huruf besar, letter-spacing lebar, dan glif `J` sendiri dari motif pupil. Mata Jejak jadi penjaga bergaya mata tarsius, bukan tombol ikon. Latar memakai aurora CSS yang hanyut sangat lambat plus butiran halus; reduced motion menghentikan pergerakannya tapi mempertahankan kedalaman.
+
+### Alasan
+Satu berkas token membuat arah visual bisa diubah tanpa menyentuh puluhan komponen. Aurora sepenuhnya CSS supaya tidak ada perangkat yang ditinggalkan dan tidak ada dependency baru.
+
+### Dampak
+Komponen baru wajib memakai nama semantik. Kalau ada yang menulis warna langsung, itu regresi. Kata "jejak" di dalam kalimat biasa tetap ditulis biasa — `Wordmark` hanya untuk merek.
+
+### Blueprint terkait
+`src/app/globals.css`, `src/components/merek.tsx`, `src/components/mata-jejak.tsx`, `src/components/aurora.tsx`, `docs/DESIGN_SYSTEM.md` §4
+
+### Menggantikan
+Menggantikan seed warna emas/charcoal pada implementasi awal Phase 4.
+
+---
+
+## DEC-0120 — Evidence Doctrine ditegakkan constraint, bukan kesepakatan
+
+**Status:** AKTIF  
+**Phase:** 5  
+**Tanggal:** 2026-08-10
+
+### Masalah
+Aturan "inferensi AI tidak setara fakta" dan "tidak ada bukti tanpa sumber" mudah disepakati lalu perlahan dilanggar begitu ada fitur yang buru-buru.
+
+### Keputusan
+Aturannya dipasang sebagai constraint database. Bukti wajib membawa sumber, kelas, waktu pengamatan, dan keandalan. Bukti yang mengaku bisa diverifikasi ulang wajib menyebutkan caranya. Baris berpenulis `ai` tidak boleh berkelas `verified_fact`. Usulan hubungan dari mesin wajib menunjuk bukti; status `accepted`/`rejected` hanya sah kalau ada waktu keputusan. Linimasa hanya membaca bukti yang punya `occurred_at`, terpisah dari `observed_at`.
+
+### Alasan
+Kalau doktrinnya hidup di kode aplikasi, ia akan dilanggar oleh jalur yang lupa memeriksanya. Di database, tidak ada jalur yang bisa lupa.
+
+### Dampak
+Sumber baru harus memetakan temuannya ke kelas bukti yang jujur sebelum bisa menyimpan apa pun. Itu memang biaya yang diinginkan.
+
+### Blueprint terkait
+`supabase/migrations/20260809194147_evidence_and_relationships.sql`, `supabase/tests/evidence-doctrine.sql`, `docs/PRD.md` Evidence Doctrine
+
+### Menggantikan
+Tidak ada
+
+---
+
 # 5. KEPUTUSAN YANG WAJIB DIBUAT SAAT IMPLEMENTASI BILA RELEVAN
 
 Saat Agent benar-benar menjalankan project, keputusan berikut belum boleh diasumsikan dan harus dicatat jika significant:

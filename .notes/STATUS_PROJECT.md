@@ -32,18 +32,19 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 
 **Project:** Jejak  
 **Domain produksi:** `https://www.cekjejak.my.id` (kanonik; apex `cekjejak.my.id` redirect ke sini — lihat DEC-0110)  
-**Status besar:** Phase 0-4 lulus. Phase 5 jalan: App Shell hidup, Kasus sudah bisa dibuat dan diisi petunjuk dari UI sampai database, identifier tersimpan terenkripsi, isolasi antar pengguna terbukti lewat tiga suite SQL.  
-**Current Phase:** `PHASE 5 — Case + Entity + Evidence Core`  
-**Current Milestone:** `Evidence Passport + relationship, di atas Kasus yang sudah hidup`  
+**Status besar:** Phase 0-3 selesai. Phase 4 hidup tapi belum visual-complete (landing belum ada). Phase 5 pola intinya sudah terbukti: Kasus, petunjuk terenkripsi, Evidence Passport, hubungan, dan linimasa — semuanya dijaga constraint database dan diuji.  
+**Current Phase:** `PHASE 5 — Case + Entity + Evidence Core` (pola inti selesai; graph/merge/attachment belum)  
+**Current Milestone:** `Landing page produksi + tutup sisa Phase 4/5, lalu Phase 6`  
 **Current Branch:** `main`  
-**Latest Commit:** `edb2277` — feat(kasus): case, membership, and protected identifiers end to end  
-**Latest Deploy:** produksi `0cca0dd` di `https://www.cekjejak.my.id`, region `sin1`, auto-deploy dari push ke `main`  
-**Database Migration Head:** `20260809165522_permissions_and_storage_security`  
+**Latest Commit:** `0d7d83d` — feat(bukti): Evidence Passport, relationships, and a timeline that cannot invent dates  
+**Latest Deploy:** produksi otomatis dari `main` di `https://www.cekjejak.my.id`, region `sin1`. Cek versi live: `curl https://www.cekjejak.my.id/api/version`  
+**Database Migration Head:** `20260809195402_decision_marker_survives_deletion`  
 **App Version:** `0.1.0`  
 **Environment:** `.env.local` terisi lengkap (Supabase URL/publishable/secret/JWKS, 4 Gemini, 4 Groq), file ignored  
 **Production Status:** `BELUM PRODUCTION`  
-**Last Updated By:** `Claude Code — interrupted resume dari sesi Codex`  
-**Last Updated At:** `2026-08-09`
+**GitHub Quality Gate:** HIJAU di `main` (run 31332309272)  
+**Last Updated By:** `Claude Code — stabilization sprint`  
+**Last Updated At:** `2026-08-10`
 
 ---
 
@@ -276,30 +277,92 @@ Urutan terdekat:
 
 > **Ini bagian paling penting untuk Agent berikutnya. Harus selalu spesifik.**
 
+## Tingkat kematangan tiap bagian
+
+Jangan baca "ada menunya" sebagai "sudah jadi". Empat tingkat:
+
+| Bagian | Tingkat | Catatan |
+|---|---|---|
+| Auth Google + sesi | acceptance proven | login sungguhan, 20 invariant RLS |
+| Peran & permission | acceptance proven | 24 permission, pencabutan langsung berlaku |
+| App Shell + navigasi | production functional | belum QA lintas browser/perangkat |
+| Search Console | production functional | deteksi jenis jalan; belum memicu pemeriksaan |
+| Kasus (buat/daftar/buka) | acceptance proven | 22 invariant isolasi |
+| Petunjuk terenkripsi | acceptance proven | ciphertext + blind index tertutup dari client |
+| Bukti + hubungan + linimasa | acceptance proven | 16 invariant; UI baru bukti dari pengguna |
+| Dompet | visual shell | panel jujur bilang belum aktif; ledger belum ada |
+| Kabar | visual shell | belum ada sumber notifikasi |
+| Mata Jejak | visual shell | maskot + panduan statis; asisten AI belum |
+| Ruang Kendali | belum ada | tautan rail mengarah ke route yang belum dibuat |
+| Landing produksi | belum ada | lihat Known Issues |
+| Graph, merge, attachment | belum ada | sisa Phase 5 |
+
 ## Next Safe Action Saat Ini
 
-**Lanjutkan Phase 5: Evidence Passport dan relationship di atas Kasus yang sudah hidup.**
+**Bangun landing page produksi.** Ini satu-satunya bagian Phase 4 yang belum ada,
+dan pengunjung yang belum login sekarang mendarat di halaman fondasi lama.
 
-Konkret:
+Lakukan berurutan, jangan lompat:
 
-1. migration `case_evidence` sesuai `docs/SCHEMA.md` — setiap bukti wajib punya sumber, jenis, waktu, keandalan, target, dan cara verifikasi ulang; kelas bukti dipisah (fakta terverifikasi / sinyal / korelasi / inferensi AI / bukti pengguna);
-2. migration `entity_relationships` dengan status `suggested`/`accepted` — AI hanya boleh mengusulkan, manusia yang menerima, dan merge harus bisa dibatalkan;
-3. RLS keduanya ikut `app.bisa_akses_kasus`; tulis ulang pola grant per kolom, bukan grant tabel lalu revoke — pelajaran dari `20260809185658`;
-4. UI: daftar bukti di halaman Kasus, dengan label kelas bukti yang jujur — inferensi tidak boleh tampil setara fakta;
-5. tambahkan invariant ke `supabase/tests/case-isolation.sql`: bukti milik kasus orang lain tidak terbaca, dan bukti tanpa sumber ditolak;
-6. jalankan tiga suite SQL + `pnpm check`, commit, push.
+1. Ganti isi `src/app/page.tsx`. Pakai komponen yang sudah ada — jangan bikin
+   sistem desain baru: `Wordmark` dari `src/components/merek.tsx` (ukuran
+   `besar`), `Aurora` dari `src/components/aurora.tsx`, `MataJejak` dari
+   `src/components/mata-jejak.tsx`. Token warna ambil dari `src/app/globals.css`;
+   dilarang menulis kode hex baru di komponen.
+2. Isi wajib landing, urut dari atas: wordmark `JEJAK`; kalimat
+   `Periksa sebelum percaya.`; demo interaktif lokal; tombol masuk Google;
+   ajakan `Pasang Jejak`; penutup
+   `Bisa mulai gratis. Nggak perlu kartu kredit.`
+3. Demo interaktif **wajib 100% lokal**. Pakai `deteksiIdentifier` dari
+   `src/lib/periksa/deteksi.ts` untuk memperlihatkan deteksi jenis input secara
+   nyata. Jangan panggil API apa pun, jangan tampilkan hasil pemeriksaan palsu,
+   jangan bikin persentase karangan.
+4. Tombol masuk harus berupa tautan `<a href="/auth/masuk-google?lanjut=%2Fberanda">`,
+   bukan form. Alasannya di DEC-0113 — form POST ke Google diblokir CSP.
+   Jangan ubah `next.config.ts` untuk mengakalinya.
+5. `Pasang Jejak` untuk sekarang cukup tautan/tombol yang menjelaskan PWA
+   menyusul di Phase 13. Jangan bikin service worker sekarang — itu Phase 13 dan
+   punya gate sendiri.
+6. Landing tidak boleh menyebabkan scroll halaman global. Ikuti pola
+   `.foundation-shell` yang sudah ada, atau bikin region scroll internal.
+7. Jalankan `pnpm check`, lalu `pnpm gate:integrasi`. Dua-duanya harus hijau.
+8. Commit, push, tunggu GitHub Actions hijau, lalu cek
+   `https://www.cekjejak.my.id` beneran berubah.
 
-Setelah itu Phase 6 (Credit Ledger) — jangan mulai mesin pemeriksaan
-sebelum ledger sehat.
+Sesudah landing beres, baru lanjut ke sisa Phase 5 (graph, merge entitas yang
+bisa dibatalkan, attachment) — **bukan** ke Phase 6. Ikuti pola yang sudah ada:
+tabel baru selalu RLS + grant per kolom, penulisan lewat fungsi SECURITY DEFINER,
+lalu tambahkan invariant ke `supabase/tests/`.
+
+### Yang TIDAK boleh diubah tanpa alasan kuat
+
+- Jangan tambah policy INSERT/UPDATE untuk client di tabel mana pun. Penulisan
+  lewat fungsi (DEC-0115).
+- Jangan pakai `grant select on <tabel>` lalu `revoke` per kolom — tidak berfungsi
+  di Postgres (DEC-0116).
+- Jangan pindahkan kunci identifier ke environment. Kunci hidup di Vault (DEC-0114).
+- Jangan bikin project Vercel atau repo baru, jangan ubah domain kanonik (DEC-0110).
+- Jangan matikan Vercel Authentication untuk preview (DEC-0112).
+- Jangan masukkan test yang butuh database ke CI publik (lihat `vitest.config.mts`).
 
 ### Cara menjalankan suite SQL
 
-```text
-pnpm exec supabase db query --db-url <connection-string> -f supabase/tests/<nama>.sql
+```bash
+pnpm db:test
 ```
 
-Keluaran `DO` tanpa error berarti lulus. Connection string ada di bagian 7
-sebelumnya; password diambil dari `JEJAK.md` dan tidak boleh dicetak.
+Menjalankan seluruh berkas di `supabase/tests`. Connection string dirakit sendiri
+dari `JEJAK.md`, atau dari env `JEJAK_DB_URL` kalau disetel. Nilainya tidak pernah
+dicetak.
+
+Gate lengkap sebelum deploy:
+
+```bash
+pnpm check && pnpm gate:integrasi
+```
+
+`pnpm check` = gate deterministik yang juga dijalankan CI. `pnpm gate:integrasi` =
+test yang menembak database sungguhan; sengaja tidak dijalankan CI publik.
 
 ### Cara menyambung ke database
 
@@ -541,6 +604,8 @@ Legend:
 | Isolasi Kasus | PASS | 2026-08-10 | `supabase/tests/case-isolation.sql`, 22 invariant |
 | Perlindungan identifier | PASS | 2026-08-10 | ciphertext + HMAC tertutup dari client, nilai bisa dipulihkan server |
 | App Shell | PASS | 2026-08-10 | build hijau, 4 route utama; QA browser lintas perangkat belum |
+| GitHub Quality Gate | PASS | 2026-08-10 | run 31332309272 hijau di `main` |
+| Evidence Doctrine | PASS | 2026-08-10 | `supabase/tests/evidence-doctrine.sql`, 16 invariant |
 | Format | PASS | 2026-08-09 | prettier check |
 | Dependency Audit | PASS | 2026-08-09 | prod, level high |
 | Google Auth | NOT_RUN | - | |
@@ -646,13 +711,16 @@ Cukup summary per suite + failing IDs.
 
 # 19. KNOWN ISSUES
 
-- Login Google belum pernah diselesaikan sekali pun, jadi initializer, peran Owner, dan RLS antar-user belum terbukti.
+- **Landing produksi belum dibangun.** `/` masih halaman fondasi lama. Phase 4 belum boleh dianggap visual-complete sampai landing memuat: wordmark `JEJAK`, kalimat `Periksa sebelum percaya.`, demo interaktif lokal, tombol masuk Google, ajakan `Pasang Jejak`, dan penutup `Bisa mulai gratis. Nggak perlu kartu kredit.`
+- **Rail desktop menautkan `/ruang-kendali` yang belum ada** — Owner/Admin yang mengekliknya dapat 404. Route-nya milik Phase 10.
+- Dompet, Kabar, dan Mata Jejak baru cangkang: panelnya jujur menyebut belum aktif, tapi belum tersambung ke apa pun.
+- Sisa Phase 5 belum: graph, merge entitas yang bisa dibatalkan, attachment, kontradiksi sebagai fitur (jenis hubungannya sudah ada).
+- QA lintas browser dan perangkat belum dilakukan sama sekali.
 - **Repo GitHub berstatus publik.** Belum ada secret yang bocor (scanner bersih di tiap commit), tapi artinya seluruh kode dan blueprint terbaca siapa saja. Kalau itu bukan yang diinginkan, ubah ke privat di GitHub — tidak ada di kode yang bisa gue ubah untuk ini.
 - MCP Supabase yang tersedia di session **tidak** punya akses ke project Jejak (`tauyicvfhpfnohhgccvn`); hanya melihat project lain. Semua kerja DB lewat Supabase CLI + connection string.
 - `supabase db advisors` dan `supabase link` butuh personal access token yang belum ada, jadi security advisor Supabase belum pernah dijalankan.
 - Docker tidak terpasang, jadi stack Supabase lokal dan `db diff` tidak tersedia. Migration ditulis tangan lalu di-push ke remote.
 - Preview memakai database produksi, ditutup Vercel Authentication (DEC-0112). Wajib ditinjau ulang begitu ada data pengguna sungguhan.
-- CI Quality Gate belum pernah gue lihat hasilnya di GitHub Actions; gate yang terbukti hijau adalah `pnpm check` lokal.
 - Real Safari QA belum dilakukan — `NOT_AVAILABLE`, bukan PASS.
 - `getServerEnv` belum dipakai jalur runtime mana pun; validasi env server belum terbukti di produksi.
 - CSP masih memakai `script-src 'unsafe-inline'`. Diperketat di Phase 15, dicatat supaya tidak terlupa.
@@ -920,8 +988,8 @@ Migration files:
   20260809163905_identity_and_rbac_foundation.sql
   20260809164435_expose_role_catalog_read.sql
   20260809165522_permissions_and_storage_security.sql
-Migration head: 20260809185734_attribution_survives_user_deletion
-Suite SQL: supabase/tests/{initializer-invariants,rls-cross-user,case-isolation}.sql — semuanya hijau
+Migration head: 20260809195402_decision_marker_survives_deletion
+Suite SQL: 4 berkas di supabase/tests — semuanya hijau, jalankan dengan `pnpm db:test`
 Fresh DB apply: NOT_RUN (butuh Docker untuk stack lokal)
 Existing DB apply: PASS (remote, 2026-08-09)
 RLS policies: profiles 2, user_roles 1, roles 1, permissions 1, role_permissions 0 — RLS aktif di semuanya
