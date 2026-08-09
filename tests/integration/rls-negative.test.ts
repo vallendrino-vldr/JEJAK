@@ -34,14 +34,19 @@ const publishableKey = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const adaCredential = Boolean(url && publishableKey);
 
 describe.skipIf(!adaCredential)("RLS menolak akses tamu", () => {
-  const tamu = createClient(url ?? "", publishableKey ?? "", {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  // Dibuat malas di dalam fungsi, bukan saat modul dibaca. `describe.skipIf`
+  // tetap menjalankan badan callback untuk mengumpulkan daftar test, jadi
+  // memanggil createClient dengan nilai kosong di sini akan melempar dan
+  // menggagalkan seluruh berkas alih-alih melewatinya.
+  const tamu = () =>
+    createClient(url ?? "", publishableKey ?? "", {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
   it.each(["profiles", "user_roles", "roles", "permissions", "role_permissions"])(
     "tamu tidak mendapat baris dari %s",
     async (tabel) => {
-      const { data, error } = await tamu.from(tabel).select("*").limit(1);
+      const { data, error } = await tamu().from(tabel).select("*").limit(1);
 
       // Boleh ditolak (error) atau dikembalikan kosong — yang dilarang adalah
       // tamu benar-benar menerima baris data.
@@ -51,7 +56,7 @@ describe.skipIf(!adaCredential)("RLS menolak akses tamu", () => {
   );
 
   it("tamu tidak bisa menyisipkan profil", async () => {
-    const { error } = await tamu
+    const { error } = await tamu()
       .from("profiles")
       .insert({ id: "00000000-0000-0000-0000-000000000000", email: "tamu@contoh.test" });
 
@@ -59,7 +64,7 @@ describe.skipIf(!adaCredential)("RLS menolak akses tamu", () => {
   });
 
   it("tamu tidak bisa menaikkan status akun siapa pun", async () => {
-    const { error, data } = await tamu
+    const { error, data } = await tamu()
       .from("profiles")
       .update({ account_status: "active" })
       .neq("id", "00000000-0000-0000-0000-000000000000")
@@ -69,7 +74,7 @@ describe.skipIf(!adaCredential)("RLS menolak akses tamu", () => {
   });
 
   it("tamu tidak bisa memberi dirinya peran", async () => {
-    const { error } = await tamu.from("user_roles").insert({
+    const { error } = await tamu().from("user_roles").insert({
       user_id: "00000000-0000-0000-0000-000000000000",
       role_id: "00000000-0000-0000-0000-000000000000",
     });
@@ -80,7 +85,7 @@ describe.skipIf(!adaCredential)("RLS menolak akses tamu", () => {
   it.each(["case-attachments", "payment-proofs"])(
     "bucket %s tidak bisa dijelajahi tamu",
     async (bucket) => {
-      const { data, error } = await tamu.storage.from(bucket).list();
+      const { data, error } = await tamu().storage.from(bucket).list();
 
       expect(error !== null || (data ?? []).length === 0).toBe(true);
       expect(data ?? []).toHaveLength(0);
@@ -90,8 +95,8 @@ describe.skipIf(!adaCredential)("RLS menolak akses tamu", () => {
   it.each(["case-attachments", "payment-proofs"])(
     "tamu tidak bisa mengunggah ke bucket %s",
     async (bucket) => {
-      const { error } = await tamu.storage
-        .from(bucket)
+      const { error } = await tamu()
+        .storage.from(bucket)
         .upload(`uji/${bucket}-tamu.txt`, new Blob(["uji"]), { contentType: "text/plain" });
 
       expect(error).not.toBeNull();
@@ -99,7 +104,7 @@ describe.skipIf(!adaCredential)("RLS menolak akses tamu", () => {
   );
 
   it("URL publik bucket privat tidak mengembalikan file", async () => {
-    const { data } = tamu.storage.from("payment-proofs").getPublicUrl("apa-saja.png");
+    const { data } = tamu().storage.from("payment-proofs").getPublicUrl("apa-saja.png");
     const respons = await fetch(data.publicUrl);
 
     expect(respons.ok).toBe(false);

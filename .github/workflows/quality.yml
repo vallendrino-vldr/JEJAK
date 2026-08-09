@@ -47,6 +47,11 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # Hanya gate deterministik yang jalan di sini. Test yang menembak database
+      # sungguhan ada di tests/integration dan supabase/tests; keduanya butuh
+      # kredensial produksi, dan repositori ini publik — menjalankannya pada
+      # setiap pull request dari siapa pun bukan pertukaran yang sehat.
+      # Jalankan `pnpm gate:integrasi` sebelum deploy.
       - name: Unit tests
         run: pnpm test
 
