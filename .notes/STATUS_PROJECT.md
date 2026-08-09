@@ -31,13 +31,13 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 # 1. SNAPSHOT SAAT INI
 
 **Project:** Jejak  
-**Domain target:** `jejak.my.id`  
-**Status besar:** Phase 0-1 lulus exit gate. Phase 2 hampir selesai: schema identity + RLS sudah live dan terbukti menolak tamu, kode OAuth sudah lengkap, tinggal provider Google diaktifkan.  
+**Domain produksi:** `https://www.cekjejak.my.id` (kanonik; apex `cekjejak.my.id` redirect ke sini — lihat DEC-0110)  
+**Status besar:** Phase 0-1 lulus exit gate. Phase 2 tinggal satu langkah manusia: alur login sudah hidup di produksi sampai halaman Google, tapi belum ada yang pernah menyelesaikan login.  
 **Current Phase:** `PHASE 2 — Supabase + Auth + Identity`  
-**Current Milestone:** `Aktifkan Google provider, lalu uji login end-to-end`  
+**Current Milestone:** `Login Google pertama, lalu verifikasi initializer + Owner`  
 **Current Branch:** `main`  
-**Latest Commit:** `b669fd7` — feat(rbac): permission catalog, role mapping, and private storage buckets  
-**Latest Deploy:** `BELUM ADA` (Vercel belum di-link)  
+**Latest Commit:** `0cca0dd` — fix(auth): mark Supabase cookies Secure in production  
+**Latest Deploy:** produksi `0cca0dd` di `https://www.cekjejak.my.id`, region `sin1`, auto-deploy dari push ke `main`  
 **Database Migration Head:** `20260809165522_permissions_and_storage_security`  
 **App Version:** `0.1.0`  
 **Environment:** `.env.local` terisi lengkap (Supabase URL/publishable/secret/JWKS, 4 Gemini, 4 Groq), file ignored  
@@ -195,6 +195,13 @@ Jangan minta Product Owner mengulang keputusan berikut.
 - [x] Helper `app.current_user_has_permission` — akun non-`active` otomatis kehilangan kemampuan staf
 - [x] Dua bucket privat (`case-attachments`, `payment-proofs`) tanpa satu pun policy client
 - [x] Test negatif storage: tamu tidak bisa list, upload, maupun ambil lewat URL publik
+- [x] Produksi hidup di domain kustom, region Singapore, auto-deploy dari `main`
+- [x] Google provider aktif di Supabase; alur login terbukti sampai halaman Google (dicek lewat browser di produksi)
+- [x] `/api/version` publik dan mengembalikan build id = SHA commit yang sedang live
+- [x] Cookie Supabase bertanda `Secure` di produksi
+- [x] Open redirect lewat `?lanjut=` ditolak di produksi (URL absolut, protocol-relative, backslash)
+- [x] `/beranda` tanpa sesi dialihkan ke `/masuk`
+- [x] Bundle klien produksi dipindai: nol secret server-only
 
 ## Belum Dimulai / Belum Diverifikasi
 - [ ] Google provider di Supabase (lihat Blocker) — login end-to-end belum bisa diuji
@@ -265,20 +272,19 @@ Urutan terdekat:
 
 ## Next Safe Action Saat Ini
 
-**Tutup Phase 2: aktifkan Google provider, lalu buktikan login end-to-end.**
+**Verifikasi hasil login Google pertama, lalu tutup Phase 2.**
 
-Konkret:
+Begitu Product Owner sudah menyelesaikan login sekali (lihat Blocker):
 
-1. begitu Product Owner memberi Google OAuth Client ID + Client Secret, aktifkan provider Google di Supabase Auth project `tauyicvfhpfnohhgccvn`;
-2. daftarkan redirect URI `https://tauyicvfhpfnohhgccvn.supabase.co/auth/v1/callback` di Google Cloud, dan `http://localhost:3000/auth/callback` sebagai Additional Redirect URL di Supabase;
-3. jalankan `pnpm dev`, login lewat `/masuk`, pastikan: profile terbuat otomatis, peran `user` terpasang, dan akun `vadlyvldr@gmail.com` mendapat peran `owner` sekali saja;
-4. login kedua kali tidak boleh menggandakan profile/peran (trigger idempotent — buktikan, jangan asumsikan);
-5. tambahkan test: user A tidak bisa membaca profile user B (butuh dua akun test, jalankan setelah login hidup);
-6. update Quality Gates `Google Auth`, `Session`, `RLS` di file ini, lalu commit.
+1. cek di database bahwa `profiles` punya tepat satu baris untuk akun itu, dan `user_roles` punya `user` + `owner` masing-masing satu baris aktif;
+2. minta Product Owner login kedua kali, lalu pastikan jumlah baris tidak bertambah — trigger memang idempotent, tapi buktikan;
+3. buat akun uji kedua (Google mana pun), lalu tulis test bahwa akun A tidak menerima satu baris pun milik akun B untuk `profiles` dan `user_roles`;
+4. buktikan peran tidak bisa dipalsukan dari browser: akun biasa mencoba `insert`/`update` ke `user_roles` harus gagal;
+5. buktikan pencabutan berlaku di request berikutnya: cabut peran lewat SQL, lalu `/beranda` harus langsung berubah tanpa menunggu token kedaluwarsa;
+6. isi Quality Gates `Google Auth`, `Session`, `RLS (user A vs user B)` di file ini dengan hasil sungguhan, commit, push.
 
-Kalau credential Google belum datang, **jangan menganggur**: lanjut Phase 3
-(permissions, role_permissions, helper `current_user_has_permission`, RLS
-Storage) karena tidak bergantung pada login yang sudah hidup.
+Kalau login pertama belum juga terjadi, **jangan menganggur**: lanjut Phase 4
+(App Shell + Design Foundation) karena tidak bergantung pada sesi yang hidup.
 
 ### Cara menyambung ke database
 
@@ -306,20 +312,21 @@ Jangan pernah mencetak URL berisi password ke output.
 
 # 8. BLOCKER
 
-**Current blocker:** `GOOGLE OAUTH CREDENTIAL` — butuh Product Owner
+**Current blocker:** `LOGIN GOOGLE PERTAMA` — butuh satu tindakan manusia
 
-Yang gue butuh: Google OAuth **Client ID** + **Client Secret** dari Google Cloud
-Console untuk project Jejak.
+Yang dibutuhkan: Product Owner membuka `https://www.cekjejak.my.id/masuk`, klik
+**Lanjut dengan Google**, pilih akun `vadlyvldr@gmail.com`, setujui consent.
 
-Kenapa: provider auth yang aktif di Supabase saat ini baru `email`. Bikin OAuth
-client dan menyetujui consent screen hanya bisa dilakukan pemilik akun Google.
+Kenapa cuma bisa manusia: memilih akun Google dan menyetujui consent adalah
+tindakan yang tidak boleh dilakukan agent — memasukkan kredensial akun ke form
+adalah batas yang tidak dilewati.
 
-Yang sudah gue kerjakan tanpa itu: seluruh sisi aplikasi dan database untuk login
-Google sudah jadi dan lulus quality gate. Begitu credential masuk, tinggal
-diaktifkan lalu diuji.
+Sudah diverifikasi sampai batas itu: rantai `/masuk` → `/auth/masuk-google` →
+Supabase authorize → halaman Sign in Google berjalan di produksi tanpa error.
+Google menerima OAuth client-nya (tidak ada `redirect_uri_mismatch`).
 
-Yang tetap gue lanjut: Phase 3 (permissions, role_permissions, RLS Storage) tidak
-bergantung pada login yang sudah hidup.
+Setelah login pertama itu, yang menyusul otomatis dan tinggal diverifikasi:
+profil dibuat sekali, peran `user` terpasang, peran `owner` diberikan sekali saja.
 
 Yang sudah terverifikasi:
 - credential lengkap di `.env.local` (belum diuji ke Supabase runtime);
@@ -443,22 +450,53 @@ Owner bootstrap: IMPLEMENTED di trigger, belum pernah terpicu karena belum ada l
 # 14. VERCEL STATUS
 
 ```text
-Project linked: BELUM DIVERIFIKASI
-Production URL: BELUM ADA / BELUM DIVERIFIKASI
-Preview protection: BELUM DIVERIFIKASI
-Region config: BELUM DIVERIFIKASI
-Environment variables: BELUM DIVERIFIKASI
+Team: Vallendrino (team_sf6VCGvrhXzNgn7KIsNI8bxO)
+Project: jejak (prj_ssDMLyWZZ5d6icSItlW4bkDm9fI9) — JANGAN bikin project baru
+Git: vallendrino-vldr/JEJAK, branch produksi `main`, auto-deploy aktif
+Production URL: https://www.cekjejak.my.id (apex redirect ke www)
+Preview protection: Vercel Authentication AKTIF, all_except_custom_domains
+  -> semua URL *.vercel.app tertutup, hanya domain kustom yang publik (DEC-0112)
+Region config: sin1, terbukti dari header x-vercel-id produksi
+Environment variables: 14 nama, semuanya dipakai atau dicadangkan phase berikutnya
 ```
+
+## Audit nama ENV di Vercel (tanpa nilai)
+
+| Nama | Kelas | Dipakai sekarang? |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | client-safe | ya |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | client-safe | ya |
+| `SUPABASE_SECRET_KEY` | server-only | belum, dicadangkan alur privileged |
+| `SUPABASE_JWKS_URL` | server-only | belum |
+| `GEMINI_API_KEY_1..4` | server-only | belum, Phase 8 |
+| `GROQ_API_KEY_1..4` | server-only | belum, Phase 8 |
+| `APP_VERSION` | build metadata | ya, dipetakan di `next.config.ts` |
+| `BUILD_ID` | build metadata | cadangan; produksi memakai `VERCEL_GIT_COMMIT_SHA` |
+
+Yang **tidak** ikut ter-import dan memang tidak boleh ada di Vercel: password
+database, legacy JWT secret, legacy service-role key, GitHub PAT. Sudah dicek per
+nama — bersih. `SUPABASE_SECRET_KEY` memakai format `sb_secret_` baru, bukan
+service-role JWT lama.
+
+Pemetaan versi sudah benar dan tidak perlu rename di Vercel: `next.config.ts`
+membaca `APP_VERSION`/`BUILD_ID` lalu mengeksposnya sebagai
+`NEXT_PUBLIC_APP_VERSION`/`NEXT_PUBLIC_BUILD_ID`, dengan `VERCEL_GIT_COMMIT_SHA`
+diprioritaskan untuk build id supaya tiap deploy punya penanda berbeda —
+syarat Version Sentinel.
 
 ---
 
 # 15. GOOGLE AUTH STATUS
 
 ```text
-OAuth provider configured: BELUM — provider aktif baru `email`
-Production redirect: BELUM didaftarkan
-PKCE/session flow: IMPLEMENTED di aplikasi, belum pernah dijalankan
-Owner role bootstrap: IMPLEMENTED (trigger, sekali pakai, tidak bisa direbut akun lain)
+OAuth provider configured: AKTIF (Google). Email sign-in dimatikan — Jejak Google-only.
+Google Authorized Redirect URI: https://tauyicvfhpfnohhgccvn.supabase.co/auth/v1/callback
+Supabase Site URL: https://www.cekjejak.my.id
+Supabase Redirect URLs: www + apex + localhost, masing-masing /auth/callback
+PKCE/session flow: TERBUKTI sampai halaman Google. Cookie code verifier terpasang
+  dengan Secure + SameSite=lax, dan Google menerima client tanpa redirect_uri_mismatch.
+Login penuh: BELUM PERNAH — butuh manusia memilih akun & consent (lihat Blocker)
+Owner role bootstrap: IMPLEMENTED (trigger, sekali pakai), belum pernah terpicu
 ```
 
 ---
@@ -481,9 +519,16 @@ Legend:
 | Unit Tests | PASS | 2026-08-09 | 29 test |
 | RLS (tamu ditolak) | PASS | 2026-08-09 | `tests/rls-negative.test.ts` lawan DB sungguhan |
 | Storage tertutup | PASS | 2026-08-09 | 2 bucket privat, 0 policy client, URL publik gagal |
+| Produksi hidup | PASS | 2026-08-10 | www.cekjejak.my.id, apex redirect, region sin1 |
+| Deploy = commit benar | PASS | 2026-08-10 | `/api/version` buildId cocok SHA yang di-push |
+| Secret bundle produksi | PASS | 2026-08-10 | 9 chunk diunduh dan dipindai, nol temuan |
+| Protected route | PASS | 2026-08-10 | `/beranda` tanpa sesi -> `/masuk?lanjut=/beranda` |
+| Open redirect | PASS | 2026-08-10 | absolut, protocol-relative, backslash semuanya ditolak |
+| Cookie Secure | PASS | 2026-08-10 | code verifier: Secure + SameSite=lax |
+| OAuth sampai Google | PASS | 2026-08-10 | halaman Sign in Google tampil, tanpa redirect_uri_mismatch |
+| Google Auth (login penuh) | NOT_RUN | - | Butuh manusia memilih akun + consent |
+| Session | NOT_RUN | - | Menunggu login pertama |
 | RLS (user A vs user B) | NOT_RUN | - | Butuh dua akun test, menunggu login hidup |
-| Google Auth | NOT_RUN | - | Provider belum aktif |
-| Session | NOT_RUN | - | Menunggu login hidup |
 | Format | PASS | 2026-08-09 | prettier check |
 | Dependency Audit | PASS | 2026-08-09 | prod, level high |
 | Google Auth | NOT_RUN | - | |
@@ -589,14 +634,16 @@ Cukup summary per suite + failing IDs.
 
 # 19. KNOWN ISSUES
 
-- Google provider belum aktif di Supabase, jadi login end-to-end belum pernah dijalankan sekali pun.
+- Login Google belum pernah diselesaikan sekali pun, jadi initializer, peran Owner, dan RLS antar-user belum terbukti.
+- **Repo GitHub berstatus publik.** Belum ada secret yang bocor (scanner bersih di tiap commit), tapi artinya seluruh kode dan blueprint terbaca siapa saja. Kalau itu bukan yang diinginkan, ubah ke privat di GitHub — tidak ada di kode yang bisa gue ubah untuk ini.
 - MCP Supabase yang tersedia di session **tidak** punya akses ke project Jejak (`tauyicvfhpfnohhgccvn`); hanya melihat project lain. Semua kerja DB lewat Supabase CLI + connection string.
 - `supabase db advisors` dan `supabase link` butuh personal access token yang belum ada, jadi security advisor Supabase belum pernah dijalankan.
 - Docker tidak terpasang, jadi stack Supabase lokal dan `db diff` tidak tersedia. Migration ditulis tangan lalu di-push ke remote.
-- Vercel project belum di-link, jadi region `sin1` di `vercel.json` belum terbukti berlaku.
-- CI Quality Gate belum pernah jalan di GitHub (baru ada setelah push pertama).
+- Preview memakai database produksi, ditutup Vercel Authentication (DEC-0112). Wajib ditinjau ulang begitu ada data pengguna sungguhan.
+- CI Quality Gate belum pernah gue lihat hasilnya di GitHub Actions; gate yang terbukti hijau adalah `pnpm check` lokal.
 - Real Safari QA belum dilakukan — `NOT_AVAILABLE`, bukan PASS.
 - `getServerEnv` belum dipakai jalur runtime mana pun; validasi env server belum terbukti di produksi.
+- CSP masih memakai `script-src 'unsafe-inline'`. Diperketat di Phase 15, dicatat supaya tidak terlupa.
 
 Agent:
 > hapus issue yang sudah benar-benar resolved dari current list.
@@ -910,14 +957,13 @@ Tidak perlu semua deploy.
 Format:
 
 ```text
-Latest Production:
-Latest Preview:
-Last Successful:
-Last Rollback:
+Latest Production: 0cca0dd @ https://www.cekjejak.my.id (region sin1)
+Latest Preview: tidak ada preview terpisah; semua deploy sejauh ini target production dari `main`
+Last Successful: 0cca0dd
+Last Rollback: belum pernah
 ```
 
-Initial:
-> none / unverified.
+Deploy dilakukan dengan cara push ke `main`. Jangan bikin jalur deploy kedua.
 
 ---
 
@@ -929,9 +975,9 @@ Saat ini:
 Blueprint documents: VERIFIED READY
 Implementation: VERIFIED sampai Phase 2 minus login (pnpm check hijau, 2026-08-09)
 Secret safety: VERIFIED (ignore + scan + client bundle)
-Git: VERIFIED (repo terisolasi, remote benar, commit ad1b0ab)
-Supabase runtime: VERIFIED untuk DB (migration + RLS negatif); auth BELUM
-Vercel runtime: NOT VERIFIED
+Git: VERIFIED (repo terisolasi, remote benar, commit 0cca0dd)
+Supabase runtime: VERIFIED untuk DB (migration + RLS negatif); login penuh BELUM
+Vercel runtime: VERIFIED (domain kustom, region sin1, auto-deploy dari main, preview tertutup)
 ```
 
 ---
@@ -1312,6 +1358,6 @@ Implement RDAP adapter normalization and run AT-SRC-001/002.
 
 Untuk Agent Coding berikutnya:
 
-> **Phase 0-1 beres. Phase 2 tinggal satu langkah: provider Google diaktifkan. Schema identity + RLS sudah live dan sudah dites menolak tamu; seluruh kode OAuth sudah jadi. Jangan init ulang project, jangan bikin app baru di subfolder, jangan ganti package manager, jangan tulis ulang migration yang sudah dipush. Kalau credential Google belum ada, kerjakan Phase 3. Baca Next Safe Action di bagian 7, lalu langsung kerja.**
+> **Phase 0-1 beres. Produksi sudah hidup di `https://www.cekjejak.my.id` dengan auto-deploy dari `main`. Phase 2 tinggal menunggu satu login Google oleh manusia, lalu hasilnya diverifikasi. Jangan init ulang project, jangan bikin project Vercel atau repo baru, jangan ganti package manager, jangan tulis ulang migration yang sudah dipush, jangan matikan Vercel Authentication untuk preview. Kalau login pertama belum terjadi, kerjakan Phase 4. Baca Next Safe Action di bagian 7, lalu langsung kerja.**
 
 **END OF STATUS PROJECT**

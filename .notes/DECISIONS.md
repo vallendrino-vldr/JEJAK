@@ -2918,6 +2918,110 @@ Tidak ada
 
 ---
 
+## DEC-0110 — Domain produksi kanonik adalah `https://www.cekjejak.my.id`
+
+**Status:** AKTIF  
+**Phase:** 1/17  
+**Tanggal:** 2026-08-10
+
+### Masalah
+Seluruh blueprint menyebut `jejak.my.id`, tetapi domain yang benar-benar dibeli dan dipasang Product Owner adalah `cekjejak.my.id`. Kalau perbedaan ini dibiarkan, agent berikutnya akan mengonfigurasi OAuth dan deploy ke domain yang tidak pernah ada.
+
+### Keputusan
+Domain produksi resmi adalah `https://www.cekjejak.my.id`. Apex `cekjejak.my.id` mengalihkan ke `www`. `jejak.my.id` di dokumen blueprint mana pun dianggap sudah tidak berlaku dan tidak perlu dikejar satu per satu — keputusan ini yang menang.
+
+### Alasan
+Domain sudah terpasang, Valid Configuration di Vercel, dan sudah dipakai sebagai Site URL di Supabase serta Authorized Origin di Google. Mengubahnya sekarang berarti mengulang seluruh konfigurasi OAuth tanpa manfaat.
+
+### Dampak
+`docs/ENVIRONMENT_CONTRACT.md` sudah diperbarui karena isinya diikuti secara harfiah saat deploy. Dokumen produk lain sengaja tidak disisir supaya diff-nya tidak melebar; entri ini adalah rujukannya.
+
+### Blueprint terkait
+`docs/ENVIRONMENT_CONTRACT.md` §28, `src/lib/url/origin.ts`
+
+### Menggantikan
+Menggantikan penyebutan `jejak.my.id` sebagai domain produksi di seluruh blueprint.
+
+---
+
+## DEC-0111 — Origin OAuth dipatok di produksi, diturunkan dari request di luar produksi
+
+**Status:** AKTIF  
+**Phase:** 2  
+**Tanggal:** 2026-08-10
+
+### Masalah
+URL `redirectTo` untuk OAuth semula dibangun dari header `Host`/`X-Forwarded-Host`. Header itu datang dari klien, jadi permintaan dengan Host palsu bisa menggeser titik pulang alur login.
+
+### Keputusan
+Saat `VERCEL_ENV === "production"`, origin dipatok ke `https://www.cekjejak.my.id`. Di localhost dan preview, origin tetap diturunkan dari request.
+
+### Alasan
+Produksi hanya punya satu origin sah, jadi tidak ada alasan menanyakannya ke klien. Preview punya hostname yang berubah-ubah, jadi menurunkannya dari request tetap yang paling praktis di sana — dan preview sudah tertutup Vercel Authentication (lihat DEC-0112).
+
+### Dampak
+Allowlist Redirect URL di Supabase tetap lapis pertahanan kedua. Kalau nanti domain berubah, satu konstanta di `src/lib/url/origin.ts` yang diubah.
+
+### Blueprint terkait
+`src/lib/url/origin.ts`, `src/app/auth/masuk-google/route.ts`, `src/app/auth/callback/route.ts`
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0112 — Preview diisolasi lewat Vercel Authentication, bukan lewat database terpisah
+
+**Status:** AKTIF  
+**Phase:** 1/17  
+**Tanggal:** 2026-08-10
+
+### Masalah
+Environment variable di Vercel tersedia untuk Production maupun Preview, artinya deployment preview memegang kredensial Supabase produksi. Kalau preview bisa dibuka siapa saja, itu jalan pintas ke data produksi.
+
+### Keputusan
+Preview tetap memakai project Supabase yang sama, tetapi seluruh URL deployment ditutup Vercel Authentication (`ssoProtection` aktif, `all_except_custom_domains`). Hanya domain kustom yang publik; setiap URL `*.vercel.app` menuntut login anggota tim.
+
+### Alasan
+Membuat project Supabase kedua berarti dua schema yang harus dijaga tetap sinkron sejak Phase 2 — beban perawatan yang belum sebanding, sementara data produksi juga belum ada. Pengaman yang benar-benar mencegah kebocoran hari ini adalah menutup pintunya.
+
+### Dampak
+Kalau nanti sudah ada data pengguna sungguhan, keputusan ini harus ditinjau ulang: preview yang menulis ke database produksi menjadi risiko nyata. Itu pemicu untuk project Supabase terpisah, dicatat sebagai DEC baru saat waktunya. Sampai saat itu, jangan mematikan Vercel Authentication untuk preview.
+
+### Blueprint terkait
+`docs/ENVIRONMENT_CONTRACT.md`, `.notes/STATUS_PROJECT.md` §14
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0113 — Login Google dimulai dari tautan GET, bukan form POST
+
+**Status:** AKTIF  
+**Phase:** 2  
+**Tanggal:** 2026-08-10
+
+### Masalah
+Header keamanan kita memasang `form-action 'self'`. Browser ikut menerapkan aturan itu pada redirect yang menjadi tujuan submit form, sehingga tombol login berupa form POST yang berujung ke `accounts.google.com` akan diblokir di produksi.
+
+### Keputusan
+Login dimulai dari route GET `/auth/masuk-google` yang dibuka lewat tautan biasa. Navigasi tautan tidak tunduk pada `form-action`. Logout tetap server action karena redirect-nya sesama origin.
+
+### Alasan
+Pilihan lain adalah melonggarkan CSP dengan menambahkan `accounts.google.com` ke `form-action`. Mengubah bentuk tautan lebih murah dan tidak mengurangi proteksi. Memulai alur OAuth lewat GET juga praktik umum, dan perlindungan dari serangan lintas situs di sini datang dari PKCE.
+
+### Dampak
+`form-action 'self'` tetap ketat. Kalau nanti ada tombol lain yang harus menyeberang ke domain luar, pola yang sama yang dipakai — tautan, bukan form.
+
+### Blueprint terkait
+`next.config.ts`, `src/app/auth/masuk-google/route.ts`, `src/app/masuk/page.tsx`
+
+### Menggantikan
+Tidak ada
+
+---
+
 # 5. KEPUTUSAN YANG WAJIB DIBUAT SAAT IMPLEMENTASI BILA RELEVAN
 
 Saat Agent benar-benar menjalankan project, keputusan berikut belum boleh diasumsikan dan harus dicatat jika significant:
