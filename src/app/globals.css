@@ -144,6 +144,7 @@ a:focus-visible {
 
 .foundation-action {
   display: inline-flex;
+  text-decoration: none;
   align-items: center;
   justify-content: center;
   min-height: 48px;

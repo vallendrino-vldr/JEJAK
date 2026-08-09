@@ -2,8 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getClientEnv } from "@/lib/env/client";
 
-/** Halaman yang boleh dibuka tanpa login. */
-const RUTE_PUBLIK = ["/", "/masuk", "/auth"];
+/**
+ * Halaman yang boleh dibuka tanpa login.
+ *
+ * `/api/version` ikut publik karena Version Sentinel harus bisa menanyakan versi
+ * aplikasi bahkan saat pengguna belum login. Isinya hanya nomor versi dan build
+ * id, tidak ada data pengguna.
+ */
+const RUTE_PUBLIK = ["/", "/masuk", "/auth", "/api/version"];
 
 function rutePublik(pathname: string) {
   return RUTE_PUBLIK.some((rute) => pathname === rute || pathname.startsWith(`${rute}/`));

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { masukDenganGoogle } from "@/lib/auth/actions";
 import { bacaSesiPengguna } from "@/lib/auth/session";
+import { tujuanAman } from "@/lib/auth/tujuan";
 import { publicErrorCatalog, type PublicErrorCode } from "@/lib/errors/public-error";
 
 export const metadata: Metadata = { title: "Masuk" };
@@ -26,7 +26,7 @@ export default async function MasukPage({
 
   const kodeGalat = typeof galat === "string" ? galat : undefined;
   const pesan = pesanGalat(kodeGalat);
-  const tujuan = typeof lanjut === "string" ? lanjut : "/beranda";
+  const tujuan = tujuanAman(lanjut);
 
   return (
     <main className="foundation-shell">
@@ -44,12 +44,13 @@ export default async function MasukPage({
           </p>
         ) : null}
 
-        <form action={masukDenganGoogle}>
-          <input type="hidden" name="lanjut" value={tujuan} />
-          <button type="submit" className="foundation-action">
-            Lanjut dengan Google
-          </button>
-        </form>
+        <a
+          className="foundation-action"
+          href={`/auth/masuk-google?lanjut=${encodeURIComponent(tujuan)}`}
+          rel="nofollow"
+        >
+          Lanjut dengan Google
+        </a>
       </section>
     </main>
   );
