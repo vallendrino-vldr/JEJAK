@@ -87,15 +87,6 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* — Pasang Jejak — */}
-        <section className="landing-pasang">
-          <h2 className="landing-pasang-judul">Pasang JEJAK</h2>
-          <p className="landing-pasang-teks">
-            JEJAK bisa dipasang langsung ke layar HP atau desktop lo — kayak aplikasi biasa, tanpa
-            download dari app store. Fitur ini lagi disiapkan.
-          </p>
-        </section>
-
         {/* — Footer — */}
         <footer className="landing-footer">
           <Wordmark ukuran="kecil" />

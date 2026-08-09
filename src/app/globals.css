@@ -334,11 +334,10 @@ button {
 
 .wordmark-teks {
   color: var(--ivory);
-  font-weight: 700;
-  /* Jarak huruf lebar adalah yang membedakannya dari teks biasa. */
-  letter-spacing: 0.26em;
-  /* Spasi kanan mengimbangi letter-spacing pada huruf terakhir. */
-  padding-left: 0.02em;
+  font-weight: 800;
+  /* Jarak huruf lebih rapat namun berwibawa. */
+  letter-spacing: 0.15em;
+  padding-left: 0.05em;
   text-indent: 0.02em;
 }
 
@@ -440,6 +439,33 @@ button {
     rgba(143, 135, 255, 0.08) 45%,
     rgba(101, 240, 197, 0) 68%
   );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .aurora::before {
+    animation: aurora-drift-1 25s ease-in-out infinite alternate;
+  }
+  .aurora::after {
+    animation: aurora-drift-2 32s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes aurora-drift-1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(6%, 4%) scale(1.05);
+  }
+}
+
+@keyframes aurora-drift-2 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(-5%, -3%) scale(0.95);
+  }
 }
 
 /* Butiran: memberi tekstur agar permukaan gelap tidak terlihat rata dan murah. */
@@ -782,29 +808,6 @@ button {
   color: var(--titanium);
   font-size: 0.86rem;
   line-height: 1.55;
-}
-
-/* — Pasang — */
-
-.landing-pasang {
-  max-width: 560px;
-  padding: var(--r5) var(--r6);
-  border: 1px dashed var(--garis-terang);
-  border-radius: var(--lengkung);
-  text-align: center;
-}
-
-.landing-pasang-judul {
-  margin: 0 0 var(--r3);
-  font-size: 1rem;
-  font-weight: 650;
-}
-
-.landing-pasang-teks {
-  margin: 0;
-  color: var(--titanium);
-  font-size: 0.88rem;
-  line-height: 1.6;
 }
 
 /* — Footer — */
