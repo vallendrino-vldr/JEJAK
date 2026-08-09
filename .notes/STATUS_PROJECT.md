@@ -325,8 +325,11 @@ Sudah diverifikasi sampai batas itu: rantai `/masuk` → `/auth/masuk-google` �
 Supabase authorize → halaman Sign in Google berjalan di produksi tanpa error.
 Google menerima OAuth client-nya (tidak ada `redirect_uri_mismatch`).
 
-Setelah login pertama itu, yang menyusul otomatis dan tinggal diverifikasi:
-profil dibuat sekali, peran `user` terpasang, peran `owner` diberikan sekali saja.
+Apa yang terjadi setelah login sudah dibuktikan lebih dulu di database lewat
+`supabase/tests/initializer-invariants.sql`: profil dibuat sekali, peran `user`
+terpasang, peran `owner` diberikan tepat sekali dan tidak bisa direbut ketika
+kepemilikan sudah dipegang, dan menghapus user membersihkan seluruh turunannya.
+Yang tersisa adalah membuktikan hal yang sama lewat jalur Google sungguhan.
 
 Yang sudah terverifikasi:
 - credential lengkap di `.env.local` (belum diuji ke Supabase runtime);
@@ -526,6 +529,7 @@ Legend:
 | Open redirect | PASS | 2026-08-10 | absolut, protocol-relative, backslash semuanya ditolak |
 | Cookie Secure | PASS | 2026-08-10 | code verifier: Secure + SameSite=lax |
 | OAuth sampai Google | PASS | 2026-08-10 | halaman Sign in Google tampil, tanpa redirect_uri_mismatch |
+| Initializer user baru | PASS | 2026-08-10 | `supabase/tests/initializer-invariants.sql`, database bersih lagi setelahnya |
 | Google Auth (login penuh) | NOT_RUN | - | Butuh manusia memilih akun + consent |
 | Session | NOT_RUN | - | Menunggu login pertama |
 | RLS (user A vs user B) | NOT_RUN | - | Butuh dua akun test, menunggu login hidup |
