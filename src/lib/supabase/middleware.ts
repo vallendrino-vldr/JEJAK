@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getClientEnv } from "@/lib/env/client";
+import { opsiCookieSupabase } from "./cookies";
 
 /**
  * Halaman yang boleh dibuka tanpa login.
@@ -30,6 +31,7 @@ export async function updateSession(request: NextRequest) {
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
+      cookieOptions: opsiCookieSupabase,
       cookies: {
         getAll() {
           return request.cookies.getAll();

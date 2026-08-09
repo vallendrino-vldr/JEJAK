@@ -3,6 +3,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getClientEnv } from "@/lib/env/client";
+import { opsiCookieSupabase } from "./cookies";
 
 /**
  * Client Supabase untuk Server Component, Server Action, dan Route Handler.
@@ -19,6 +20,7 @@ export async function createSupabaseServerClient() {
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
+      cookieOptions: opsiCookieSupabase,
       cookies: {
         getAll() {
           return cookieStore.getAll();

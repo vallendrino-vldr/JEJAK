@@ -1,7 +1,7 @@
 # ENVIRONMENT CONTRACT — JEJAK
 
 > **Status:** Kontrak environment, secret, provider credential, deployment environment, dan bootstrap runtime untuk Agent Coding  
-> **Produk:** Jejak — `jejak.my.id`  
+> **Produk:** Jejak — `www.cekjejak.my.id` (lihat DEC-0110; `jejak.my.id` di dokumen lain sudah tidak dipakai)  
 > **Tujuan:** Mencegah salah pasang secret, credential bocor, environment drift, dan perbedaan perilaku local/preview/production  
 > **Berlaku untuk:** Semua Agent Coding dan seluruh runtime Jejak  
 > **Source of truth terkait:** `docs/SCHEMA.md`, `docs/ROADMAP.md`, `.notes/AGENTS.md`, `.notes/STATUS_PROJECT.md`, `.notes/DECISIONS.md`, `PROMPT_PEMBUKA.md`  
@@ -629,7 +629,7 @@ NEXT_PUBLIC_APP_URL
 Values:
 - Local: `http://localhost:3000`
 - Preview: preview URL generated/derived
-- Production: `https://jejak.my.id`
+- Production: `https://www.cekjejak.my.id`
 
 Agent dapat derive preview hostname dari platform runtime bila lebih tepat.
 
@@ -1176,7 +1176,7 @@ Do not manually roll JWT verification unless needed.
 
 Production:
 ```text
-https://jejak.my.id
+https://www.cekjejak.my.id
 ```
 
 Allowed origins/callbacks should match.
