@@ -32,18 +32,18 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 
 **Project:** JEJAK  
 **Domain produksi:** `https://www.cekjejak.my.id` (kanonik; apex `cekjejak.my.id` redirect ke sini — lihat DEC-0110)  
-**Status besar:** Phase 0-4 selesai. Phase 5 pola intinya sudah terbukti: Kasus, petunjuk terenkripsi, Evidence Passport, hubungan, dan linimasa — semuanya dijaga constraint database dan diuji. Landing produksi hidup.  
-**Current Phase:** `PHASE 5 — Case + Entity + Evidence Core` (pola inti selesai; graph/merge/attachment belum)  
-**Current Milestone:** `Sisa Phase 5 (graph, merge, attachment), lalu Phase 6`  
+**Status besar:** Phase 0-5 selesai. Entity graph, merge logis (reversible), dan attachment foundation telah diimplementasi via fungsi Security Definer beserta RLS bucket private, diuji via invariant tests.  
+**Current Phase:** `PHASE 6 — Credit Ledger + Pricing`  
+**Current Milestone:** `Membangun fondasi dompet, mutasi kredit (FEFO), dan pembekuan (hold) secara atomik di DB`  
 **Current Branch:** `main`  
-**Latest Commit:** `2142a52` — feat(landing): production landing page with interactive demo, brand audit, and micro-motion  
+**Latest Commit:** `1eb819c` — feat(db): implement entity merge and case attachments  
 **Latest Deploy:** produksi otomatis dari `main` di `https://www.cekjejak.my.id`, region `sin1`. Cek versi live: `curl https://www.cekjejak.my.id/api/version`  
-**Database Migration Head:** `20260809195402_decision_marker_survives_deletion`  
+**Database Migration Head:** `20260810035502_fix_attachment_updated_at`  
 **App Version:** `0.1.0`  
 **Environment:** `.env.local` terisi lengkap (Supabase URL/publishable/secret/JWKS, 4 Gemini, 4 Groq), file ignored  
 **Production Status:** `BELUM PRODUCTION`  
-**GitHub Quality Gate:** HIJAU di `main` (commit 2142a52)  
-**Last Updated By:** `Antigravity — landing + brand audit`  
+**GitHub Quality Gate:** HIJAU di `main` (commit 1eb819c)  
+**Last Updated By:** `Antigravity — Phase 5 completion`  
 **Last Updated At:** `2026-08-10`
 
 ---
@@ -295,26 +295,20 @@ Jangan baca "ada menunya" sebagai "sudah jadi". Empat tingkat:
 | Mata Jejak | visual shell | maskot + panduan statis; asisten AI belum |
 | Ruang Kendali | belum ada | tautan rail mengarah ke route yang belum dibuat |
 | Landing produksi | production functional | hero, demo interaktif, CTA, fitur, PWA teaser |
-| Graph, merge, attachment | belum ada | sisa Phase 5 |
+| Graph, merge, attachment | acceptance proven | Phase 5 selesai via DB invariants |
 
 ## Next Safe Action Saat Ini
 
-**Lanjut sisa Phase 5: graph, merge entitas, dan attachment.** Landing produksi
-sudah hidup di `https://www.cekjejak.my.id`. Phase 4 visual-complete.
+**Mulai Phase 6: Credit Ledger + Pricing.** Phase 5 sudah selesai seluruhnya.
 
 Lakukan berurutan:
 
-1. Baca `docs/SCHEMA.md` bagian entity graph, merge, dan attachment.
-2. Buat migration untuk tabel entity graph (jika belum ada). RLS + grant
-   per kolom, penulisan lewat fungsi SECURITY DEFINER.
-3. Implement merge entitas yang bisa dibatalkan.
-4. Implement attachment case (file upload ke `case-attachments` bucket).
-5. Tambahkan invariant ke `supabase/tests/`.
-6. Wire UI jika sudah ada komponen yang relevan.
-7. Jalankan `pnpm check`, lalu `pnpm gate:integrasi`. Dua-duanya harus hijau.
-8. Commit, push, tunggu GitHub Actions hijau.
-
-Sesudah sisa Phase 5 beres, lanjut ke Phase 6 (Credit Ledger + Pricing).
+1. Baca `docs/SCHEMA.md` bagian 12 (Scan Product / Pricing Model) dan aturan Phase 6 Credit Ledger (dompet, holds, FEFO, mutasi atomik).
+2. Buat tabel `wallets`, `credit_lots`, `credit_holds`, `ledger_entries`, `scan_products`, dan `scan_quotes` dalam skema migrasi baru.
+3. Terapkan invariant PostgreSQL (contoh: fungsi transaksi saldo FEFO yang mencegah race condition).
+4. Buat tes invarian untuk dompet dan transaksi finansial di `supabase/tests/`.
+5. Jalankan `pnpm check` dan `pnpm gate:integrasi` (wajib hijau).
+6. Implementasikan API atau Service Layer di Next.js untuk melihat saldo dan riwayat (Ruang Kendali/Dompet UI).
 
 ### Yang TIDAK boleh diubah tanpa alasan kuat
 
