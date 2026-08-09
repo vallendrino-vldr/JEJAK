@@ -2575,6 +2575,141 @@ Tidak ada
 
 ---
 
+## DEC-0097 — Package manager final: pnpm 11.16.0 lewat corepack
+
+**Status:** AKTIF  
+**Phase:** 1  
+**Tanggal:** 2026-08-09
+
+### Masalah
+`package.json` mengunci `packageManager: pnpm@11.16.0`, tapi `pnpm` tidak ada di PATH mesin ini sehingga script komposit `pnpm check` gagal memanggil sub-script-nya.
+
+### Keputusan
+Pakai pnpm sebagai package manager tunggal dan aktifkan lewat `corepack enable` (shim resmi Node), bukan install pnpm global via npm.
+
+### Alasan
+Versi pnpm mengikuti field `packageManager` sehingga lokal, CI, dan agent lain memakai versi yang sama. Menghindari drift lockfile.
+
+### Dampak
+Agent baru di mesin bersih cukup menjalankan `corepack enable` sekali. Jangan menambah `npm install -g pnpm`, dan jangan mencampur npm/yarn di repo ini.
+
+### Blueprint terkait
+`docs/ROADMAP.md` Phase 1, `.github/workflows/quality.yml`
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0098 — pnpm build script allowlist, bukan mematikan proteksi
+
+**Status:** AKTIF  
+**Phase:** 1  
+**Tanggal:** 2026-08-09
+
+### Masalah
+pnpm memblokir postinstall script dependency secara default. Ada dependency yang memang butuh build script agar berfungsi.
+
+### Keputusan
+Izinkan hanya dependency yang benar-benar membutuhkannya lewat allowlist di `pnpm-workspace.yaml`, dan biarkan proteksi default tetap menyala untuk sisanya.
+
+### Alasan
+Mematikan proteksi secara global akan membuat setiap dependency baru bisa menjalankan kode saat install tanpa ditinjau — jalur supply chain yang tidak mau kita buka.
+
+### Dampak
+Dependency baru yang butuh build script harus ditambahkan sadar-sadar ke allowlist, bukan dengan melonggarkan konfigurasi.
+
+### Blueprint terkait
+`pnpm-workspace.yaml`, `.notes/AGENTS.md` §10
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0099 — Secret scan dijalankan sendiri, bukan menumpang layanan eksternal
+
+**Status:** AKTIF  
+**Phase:** 0/1  
+**Tanggal:** 2026-08-09
+
+### Masalah
+Project menyimpan bootstrap credential lokal (`JEJAK.md`) dan banyak provider key. Ketergantungan pada scanner pihak ketiga berarti isi repo harus dikirim keluar dan hasilnya tidak bisa dijalankan tiap commit secara offline.
+
+### Keputusan
+Pakai `scripts/secret-scan.mjs` milik sendiri, dijalankan atas semua file yang Git lihat (tracked + untracked non-ignored), dan dipasang sebagai langkah wajib di `pnpm check` serta CI.
+
+### Alasan
+Cepat, offline, tidak mengirim kode ke luar, dan aturannya bisa disesuaikan dengan provider yang benar-benar dipakai Jejak.
+
+### Dampak
+Scanner harus dirawat: setiap provider/kredensial baru berarti aturan baru. Laporan hanya menyebut path + nama aturan, tidak pernah mencetak nilai secret.
+
+### Blueprint terkait
+`docs/SECURITY_THREAT_MODEL.md`, `.notes/AGENTS.md` §27–30
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0100 — False positive secret scan diselesaikan dengan mempersempit sasaran, bukan melemahkan aturan
+
+**Status:** AKTIF  
+**Phase:** 0/1  
+**Tanggal:** 2026-08-09
+
+### Masalah
+Scanner sempat menandai tiga hal yang bukan kebocoran: placeholder di `.env.example`, fixture test yang formatnya terlalu mirip secret asli, dan contoh env di dokumentasi. Godaannya adalah melonggarkan aturan sampai ketiganya lolos — dan ikut membuat secret asli lolos.
+
+### Keputusan
+Tiga langkah, tanpa mengendurkan deteksi:
+1. aturan env hanya memicu kalau nilainya benar-benar terisi dan bukan placeholder (`<...`, `your-`, `change-me`, kosong);
+2. `.env.example` diizinkan ada sebagai nama file, isinya tetap dipindai;
+3. sampel secret di test dirakit dari potongan string saat runtime, sehingga tidak pernah muncul utuh di source, dan fixture-nya ditulis ke direktori temp di luar repo.
+
+Scanner juga menerima path eksplisit sebagai argumen supaya test bisa memanggilnya tanpa menyentuh isi repo.
+
+### Alasan
+False positive dan deteksi lemah sama-sama merusak: yang pertama membuat orang mengabaikan alarm, yang kedua membuat alarm tidak berbunyi. Yang benar adalah memperjelas sasaran.
+
+### Dampak
+Aturan justru bertambah ketat: sekarang juga menangkap JWT bertanda tangan (bentuk legacy service-role key Supabase), connection string Postgres dengan password nyata, serta env key yang mengandung `SERVICE_ROLE` atau `CREDENTIAL`. `tests/secret-scan.test.ts` menjaga agar pelonggaran di masa depan langsung merah.
+
+### Blueprint terkait
+`scripts/secret-scan.mjs`, `tests/secret-scan.test.ts`, `docs/SECURITY_THREAT_MODEL.md`
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0101 — Testing stack final: Vitest untuk unit/integration
+
+**Status:** AKTIF  
+**Phase:** 1  
+**Tanggal:** 2026-08-09
+
+### Masalah
+`docs/DECISIONS` menyebut testing stack belum dikunci, sementara Phase 1 butuh bukti otomatis sejak awal.
+
+### Keputusan
+Vitest jadi test runner untuk unit dan integration, dengan pola file `src/**/*.test.ts` dan `tests/**/*.test.ts`. Browser/E2E dan RLS negative test ditentukan terpisah saat phase-nya tiba.
+
+### Alasan
+Satu runner, konfigurasi minimal, jalan cepat, dan cocok dipakai sebagai gate di setiap commit.
+
+### Dampak
+Test yang butuh browser nyata tidak dipaksa masuk Vitest; itu keputusan Phase 13/16.
+
+### Blueprint terkait
+`vitest.config.ts`, `docs/ROADMAP.md` Phase 1
+
+### Menggantikan
+Melengkapi DEC-0095 (belum dikunci) untuk bagian testing saja.
+
+---
+
 # 5. KEPUTUSAN YANG WAJIB DIBUAT SAAT IMPLEMENTASI BILA RELEVAN
 
 Saat Agent benar-benar menjalankan project, keputusan berikut belum boleh diasumsikan dan harus dicatat jika significant:

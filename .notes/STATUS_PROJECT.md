@@ -32,17 +32,17 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 
 **Project:** Jejak  
 **Domain target:** `jejak.my.id`  
-**Status besar:** Blueprint selesai, implementasi aplikasi belum dimulai dari snapshot awal ini  
-**Current Phase:** `PHASE 0 — Project Intake & Safety`  
-**Current Milestone:** `Bootstrap Agent Coding pertama`  
-**Current Branch:** `BELUM DIVERIFIKASI OLEH AGENT`  
-**Latest Commit:** `BELUM DIVERIFIKASI OLEH AGENT`  
-**Latest Deploy:** `BELUM ADA / BELUM DIVERIFIKASI`  
-**Database Migration Head:** `BELUM ADA / BELUM DIVERIFIKASI`  
-**App Version:** `BELUM DITETAPKAN IMPLEMENTASI`  
-**Environment:** Blueprint + local bootstrap tersedia  
+**Status besar:** Phase 0 dan Phase 1 lulus exit gate. Runtime foundation hidup, quality gate hijau, belum ada Supabase/Auth.  
+**Current Phase:** `PHASE 2 — Supabase + Auth + Identity`  
+**Current Milestone:** `Koneksi Supabase + migration awal + Google OAuth SSR`  
+**Current Branch:** `main`  
+**Latest Commit:** `0465989` — feat(bootstrap): phase 0-1 foundation, quality gate, and secret scanner  
+**Latest Deploy:** `BELUM ADA` (Vercel belum di-link)  
+**Database Migration Head:** `NONE` (belum ada migration)  
+**App Version:** `0.1.0`  
+**Environment:** `.env.local` terisi lengkap (Supabase URL/publishable/secret/JWKS, 4 Gemini, 4 Groq), file ignored  
 **Production Status:** `BELUM PRODUCTION`  
-**Last Updated By:** `Blueprint handoff`  
+**Last Updated By:** `Claude Code — interrupted resume dari sesi Codex`  
 **Last Updated At:** `2026-08-09`
 
 ---
@@ -62,8 +62,18 @@ Semua blueprint utama sudah tersedia dan harus diperlakukan sebagai source of tr
 | `.notes/AGENTS.md` | READY | Kontrak kerja semua Agent |
 | `PROMPT_PEMBUKA.md` | READY | Starter prompt untuk Claude/Codex/Antigravity |
 | `.notes/STATUS_PROJECT.md` | READY | File ini |
-| `.notes/DECISIONS.md` | NEXT | Decision memory lintas-agent |
+| `.notes/DECISIONS.md` | READY | Decision memory lintas-agent |
 | `JEJAK.md` | LOCAL SECRET BOOTSTRAP | Credential + metadata environment, jangan commit |
+
+Dokumen turunan yang dibuat saat Phase 0/1 (bukan blueprint asli, boleh diubah agent bila implementasi berubah):
+
+| File | Fungsi |
+|---|---|
+| `docs/ENVIRONMENT_CONTRACT.md` | Daftar env var, klasifikasi client-safe vs server-only |
+| `docs/SECURITY_THREAT_MODEL.md` | Threat model + kontrol yang dipilih |
+| `docs/ARCHITECTURE_RUNTIME.md` | Struktur folder + boundary runtime |
+| `docs/API_CONTRACT.md` | Kontrak response/error API |
+| `docs/RELEASE_RUNBOOK.md` | Prosedur rilis |
 
 ---
 
@@ -161,29 +171,22 @@ Jangan minta Product Owner mengulang keputusan berikut.
 
 # 4. CURRENT IMPLEMENTATION STATE
 
-> Snapshot awal ini dibuat sebelum Agent Coding pertama mulai mengimplementasikan aplikasi.
-
 ## Sudah Selesai
-- [x] Product brainstorming
-- [x] Product scope V1/V1.5/V2
-- [x] PRD
-- [x] Design System
-- [x] Wire Map
-- [x] Schema blueprint
-- [x] Roadmap
-- [x] Agent contract
-- [x] Acceptance test contract
-- [x] Prompt pembuka
-- [x] Local environment bootstrap disiapkan oleh Product Owner
-- [x] Global tooling/skills sudah dipasang oleh Product Owner
-- [x] Workflow lintas-agent dirancang
+- [x] Seluruh blueprint (PRD, Design System, Wire Map, Schema, Roadmap, Acceptance Tests, Agent contract)
+- [x] Git repo JEJAK terpisah dari repo parent, remote `origin` = `github.com/vallendrino-vldr/JEJAK`
+- [x] `.gitignore` menutup `JEJAK.md`, `.env*` (kecuali `.env.example`), credential/key files
+- [x] `.env.local` dibootstrap dari `JEJAK.md` lewat `scripts/bootstrap-local-env.ps1`
+- [x] Next.js 16 App Router + TypeScript strict, in-place tanpa menghapus docs
+- [x] Environment validation zod: `parseClientEnv` / `parseServerEnv`, server-only dijaga `server-only`
+- [x] Error foundation: `error.tsx`, `global-error.tsx`, `not-found.tsx`, katalog JX
+- [x] App version + build id via `/api/version` (fondasi Version Sentinel)
+- [x] Toolchain: pnpm 11.16.0 (corepack), ESLint, Prettier, Vitest, simple-git-hooks + lint-staged
+- [x] Secret scanner `scripts/secret-scan.mjs` + unit test adversarial di `tests/secret-scan.test.ts`
+- [x] CI GitHub Actions `Quality Gate` (format, secret scan, lint, typecheck, test, build, audit)
+- [x] `vercel.json` region `sin1` (Singapore)
+- [x] Checkpoint commit pertama `0465989`
 
 ## Belum Dimulai / Belum Diverifikasi
-- [ ] Git repository state
-- [ ] `.gitignore` secret safety
-- [ ] Next.js app initialization
-- [ ] Dependency audit
-- [ ] Global skill inventory actual
 - [ ] Supabase runtime connection
 - [ ] Google OAuth
 - [ ] Database migrations
@@ -209,29 +212,21 @@ Jangan minta Product Owner mengulang keputusan berikut.
 
 # 5. CURRENT PHASE — DETAIL
 
-## PHASE 0 — Project Intake & Safety
+## PHASE 2 — Supabase + Auth + Identity
 
 ### Tujuan
-Pastikan Agent pertama:
-- memahami project tanpa re-read semua docs;
-- mengamankan secret;
-- mengecek global skills;
-- mengecek Git;
-- membuat runtime baseline;
-- tidak merusak file blueprint.
+Menyambungkan aplikasi ke Supabase, membuat migration awal, dan menghidupkan Google OAuth dengan pola SSR/PKCE yang didukung resmi.
 
-### Phase 0 Status
-`NOT_STARTED`
+### Phase 2 Status
+`IN_PROGRESS`
 
 ### Wajib Dibaca
-- `PROMPT_PEMBUKA.md`
-- `.notes/AGENTS.md`
-- `docs/ROADMAP.md` bagian Phase 0
-- `docs/SCHEMA.md` bagian bootstrap/environment/secret
-- file ini
-- `.notes/DECISIONS.md` setelah dibuat
+- `docs/ROADMAP.md` Phase 2
+- `docs/SCHEMA.md` bagian auth/identity/profile + RLS dasar
+- `docs/ENVIRONMENT_CONTRACT.md`
+- dokumentasi resmi Supabase SSR terbaru (jangan pakai blog acak)
 
-### Tidak Perlu Dibaca Full Saat Phase 0
+### Tidak Perlu Dibaca Full
 - seluruh `DESIGN_SYSTEM.md`
 - seluruh `WIRE_MAP.md`
 - seluruh `ACCEPTANCE_TESTS.md`
@@ -242,17 +237,14 @@ Pastikan Agent pertama:
 
 Urutan terdekat:
 
-1. pastikan `JEJAK.md` di-ignore Git;
-2. pastikan env secret tidak tracked;
-3. inspect Git remote dan existing state;
-4. inspect global skills/tooling;
-5. buat `.notes/DECISIONS.md` jika belum;
-6. inspect Node/package manager;
-7. verify Next.js/Supabase/Vercel tooling;
-8. initialize runtime tanpa menghapus blueprint;
-9. production build baseline;
-10. update file ini;
-11. lanjut Phase 1.
+1. verifikasi koneksi Supabase project (region Singapore) dari credential yang sudah ada di `.env.local`;
+2. buat struktur migration + migration pertama (identity/profile) sesuai `SCHEMA.md`;
+3. pasang Supabase SSR client (browser + server) dengan pemisahan publishable vs secret;
+4. implement Google OAuth sign-in/callback/sign-out;
+5. bootstrap role Owner lewat DB, bukan kondisi email di frontend;
+6. tulis test negatif dasar untuk session/authorization;
+7. update file ini + migration head;
+8. lanjut Phase 3 (RBAC + RLS + Storage Security).
 
 ---
 
@@ -262,45 +254,36 @@ Urutan terdekat:
 
 ## Next Safe Action Saat Ini
 
-**Jalankan bootstrap Phase 0.**
+**Sambungkan Supabase dan buat migration identity pertama.**
 
-Urutan:
+Konkret:
 
-1. inspect root project;
-2. inspect `git status`;
-3. inspect `.gitignore`;
-4. pastikan `JEJAK.md` tidak tracked;
-5. pastikan `.env*` sensitif tidak tracked;
-6. inspect global skills/tooling yang tersedia;
-7. verify Git remote;
-8. verify Node/package manager;
-9. create `.notes/DECISIONS.md` jika belum ada;
-10. update `Current Branch`, `Latest Commit`, dan environment info di file ini;
-11. lanjut ke runtime initialization sesuai ROADMAP.
+1. verifikasi project Supabase aktif memakai `SUPABASE_SECRET_KEY` dari server-side (jangan pernah dari client);
+2. buat folder `supabase/migrations/` dan migration pertama untuk tabel identity/profile sesuai `docs/SCHEMA.md`, dengan RLS `enable` + deny-by-default sejak migration pertama (jangan tunda ke Phase 3);
+3. tambahkan Supabase SSR client di `src/lib/supabase/` — pemisahan tegas browser client (publishable) dan server client (secret, `server-only`);
+4. implement route Google OAuth: sign-in, callback, sign-out, memakai pola SSR/PKCE resmi Supabase versi saat ini;
+5. bootstrap role Owner untuk `vadlyvldr@gmail.com` sebagai row di DB, bukan `if email === owner` di kode;
+6. tulis test: session kosong tidak bisa baca profile orang lain (negative test dasar);
+7. jalankan `pnpm check`, update `Migration Head` + Quality Gates di file ini, commit checkpoint.
 
 ### Relevant Files
-- `PROMPT_PEMBUKA.md`
-- `.notes/AGENTS.md`
-- `docs/ROADMAP.md`
-- `docs/SCHEMA.md`
-- `JEJAK.md` lokal
+- `docs/ROADMAP.md` Phase 2
+- `docs/SCHEMA.md` bagian auth/identity/RLS
+- `docs/ENVIRONMENT_CONTRACT.md`
+- `src/lib/env/server.ts`, `src/lib/env/client.ts`
+- `supabase/migrations/` (belum ada, akan dibuat)
 
 ---
 
 # 8. BLOCKER
 
-**Current blocker:** `TIDAK ADA YANG SUDAH TERKONFIRMASI`
+**Current blocker:** `TIDAK ADA`
 
-Agent pertama harus inspect environment.
-
-Jangan menganggap:
-- credential valid;
-- Git remote benar;
-- Supabase connected;
-- package terinstall;
-- Vercel connected
-
-sebelum diperiksa.
+Yang sudah terverifikasi:
+- credential lengkap di `.env.local` (belum diuji ke Supabase runtime);
+- Git remote benar dan masih kosong sebelum commit pertama;
+- dependency terinstall (pnpm 11.16.0 via corepack);
+- Vercel belum di-link, dan itu belum dibutuhkan sampai deploy pertama.
 
 ---
 
@@ -309,26 +292,24 @@ sebelum diperiksa.
 Product Owner sudah memberi tahu bahwa banyak skills/tooling dipasang secara global.
 
 ## Status
-`BELUM DIINVENTARISASI OLEH AGENT`
-
-Agent pertama wajib mengisi:
+`SUDAH DIINVENTARISASI` — 2026-08-09
 
 ```text
-Node:
-npm/pnpm/yarn/bun:
-Git:
-GitHub CLI:
-Supabase CLI:
-Vercel CLI:
-Browser automation:
-Testing:
-PWA tooling:
-Security tools:
-Other relevant global skills:
+Node: v24.18.0
+Package manager: pnpm 11.16.0 lewat corepack shim (bukan install global npm)
+Git: 2.55.0.windows.3
+GitHub CLI: TIDAK TERPASANG (belum dibutuhkan, push pakai git + credential manager)
+Supabase CLI: TIDAK TERPASANG — pakai MCP Supabase yang tersedia di session
+Vercel CLI: TIDAK TERPASANG — pakai MCP Vercel yang tersedia di session
+Browser automation: MCP browser tersedia (in-app + Chrome)
+Testing: Vitest 4.1.10 (lokal project)
+Security tools: secret scanner lokal + `pnpm audit --prod`
+Skill relevan: supabase, supabase-postgres-best-practices, modern-web-guidance
 ```
 
 ### Rule
-Jangan install ulang sebelum cek.
+Jangan install ulang sebelum cek. `corepack enable` sudah dijalankan supaya
+`pnpm` bisa dipanggil langsung; ini shim resmi Node, bukan install pnpm global.
 
 ---
 
@@ -338,16 +319,15 @@ Jangan install ulang sebelum cek.
 `JEJAK.md`
 
 ### Status
-`BELUM DIVERIFIKASI AGENT`
+`VERIFIED` — 2026-08-09
 
-Wajib cek:
-- [ ] di `.gitignore`
-- [ ] tidak tracked
-- [ ] tidak staged
-- [ ] secret tidak masuk blueprint
-- [ ] env server/client dipisah
-- [ ] secret tidak masuk client bundle
-- [ ] secret scan baseline
+- [x] di `.gitignore` (`git check-ignore` mengonfirmasi `JEJAK.md`, `.env.local`, `.env`)
+- [x] tidak tracked
+- [x] tidak staged pada commit `0465989`
+- [x] secret tidak masuk blueprint
+- [x] env server/client dipisah (`server-only` di `src/lib/env/server.ts`)
+- [x] secret tidak masuk client bundle (`.next/static` bersih dari nama env server-only)
+- [x] secret scan baseline hijau + punya unit test sendiri
 
 Jika salah satu gagal:
 > Phase 0 belum boleh DONE.
@@ -356,18 +336,21 @@ Jika salah satu gagal:
 
 # 11. GIT STATUS
 
-**Repository:** `BELUM DIVERIFIKASI AGENT`
-
-Isi setelah inspect:
+**Repository:** `VERIFIED` — 2026-08-09
 
 ```text
-Current branch:
-Remote:
-Latest commit:
-Working tree:
-Untracked files:
-Secret files tracked?:
+Current branch: main
+Remote: origin https://github.com/vallendrino-vldr/JEJAK.git
+Latest commit: 0465989 feat(bootstrap): phase 0-1 foundation, quality gate, and secret scanner
+Working tree: bersih selain notes yang sedang diupdate
+Untracked files: tidak ada yang perlu di-track
+Secret files tracked?: TIDAK
 ```
+
+Catatan: repo ini pernah ikut terbaca sebagai bagian dari Git parent di
+`C:\Users\Administrator` (remote DuitKita). Sudah diisolasi jadi repo sendiri.
+Kalau agent berikutnya lihat file JEJAK muncul di `git status` repo lain,
+itu regresi dan harus dibereskan sebelum commit apa pun.
 
 ### Rule
 Jangan force push.
@@ -379,15 +362,20 @@ Jangan init ulang jika repo existing.
 # 12. RUNTIME STATUS
 
 ```text
-Node version: BELUM DIVERIFIKASI
-Package manager: BELUM DIVERIFIKASI
-Next.js: BELUM DIVERIFIKASI
-TypeScript: BELUM DIVERIFIKASI
-Build: NOT_RUN
-Lint: NOT_RUN
-Typecheck: NOT_RUN
-Tests: NOT_RUN
+Node version: v24.18.0
+Package manager: pnpm 11.16.0 (corepack)
+Next.js: 16.3.0 (Turbopack), React 19.2
+TypeScript: 6.0.3, strict
+Build: PASS
+Lint: PASS
+Typecheck: PASS
+Tests: PASS (4 file, 16 test)
+Format check: PASS
+Secret scan: PASS
+Prod dependency audit: PASS (no known vulnerabilities)
 ```
+
+Perintah gate lengkap: `pnpm check`
 
 ---
 
@@ -444,10 +432,12 @@ Legend:
 
 | Area | Status | Last Verified | Notes |
 |---|---|---|---|
-| Production Build | NOT_RUN | - | |
-| Typecheck | NOT_RUN | - | |
-| Lint | NOT_RUN | - | |
-| Unit Tests | NOT_RUN | - | |
+| Production Build | PASS | 2026-08-09 | `next build` 3 route |
+| Typecheck | PASS | 2026-08-09 | strict |
+| Lint | PASS | 2026-08-09 | `--max-warnings=0` |
+| Unit Tests | PASS | 2026-08-09 | 16 test |
+| Format | PASS | 2026-08-09 | prettier check |
+| Dependency Audit | PASS | 2026-08-09 | prod, level high |
 | Google Auth | NOT_RUN | - | |
 | Session | NOT_RUN | - | |
 | RBAC | NOT_RUN | - | |
@@ -479,7 +469,8 @@ Legend:
 | Firefox | NOT_RUN | - | |
 | Accessibility | NOT_RUN | - | |
 | Performance | NOT_RUN | - | |
-| Secret Scan | NOT_RUN | - | |
+| Secret Scan | PASS | 2026-08-09 | 49 file kandidat, punya test sendiri |
+| Client Bundle Secret | PASS | 2026-08-09 | `.next/static` bersih |
 | Security Suite | NOT_RUN | - | |
 
 ---
@@ -508,8 +499,8 @@ Cukup summary per suite + failing IDs.
 
 | Suite | Status | Catatan |
 |---|---|---|
-| Bootstrap & Secret Safety | NOT_RUN | |
-| Git & Environment | NOT_RUN | |
+| Bootstrap & Secret Safety | PARTIAL | Secret ignore/scan/bundle PASS. Rotasi & incident drill belum. |
+| Git & Environment | PARTIAL | Repo, remote, runtime, CI PASS. Deploy env Vercel belum. |
 | Google Auth & Session | NOT_RUN | |
 | RBAC & RLS | NOT_RUN | |
 | Storage Authorization | NOT_RUN | |
@@ -550,14 +541,12 @@ Cukup summary per suite + failing IDs.
 
 # 19. KNOWN ISSUES
 
-Snapshot awal:
-
-- Belum ada issue implementasi karena code belum diverifikasi/dimulai.
-- Secret safety belum diverifikasi Agent.
-- Real Safari QA belum dilakukan.
-- Repository state belum diverifikasi.
-- Supabase connection belum diverifikasi.
-- Production deploy belum ada/dikonfirmasi.
+- Supabase runtime connection belum pernah diuji dari kode (credential ada, koneksi belum dibuktikan).
+- Google OAuth belum dikonfigurasi; redirect URI production belum didaftarkan.
+- Vercel project belum di-link, jadi region `sin1` di `vercel.json` belum terbukti berlaku.
+- CI Quality Gate belum pernah jalan di GitHub (baru ada setelah push pertama).
+- Real Safari QA belum dilakukan — `NOT_AVAILABLE`, bukan PASS.
+- `getClientEnv`/`getServerEnv` sudah ada tapi belum dipakai halaman mana pun, jadi env validation belum terbukti di jalur runtime nyata.
 
 Agent:
 > hapus issue yang sudah benar-benar resolved dari current list.
@@ -818,7 +807,7 @@ Provider burn/rate control: NOT_RUN
 
 ```text
 Migration strategy: defined in SCHEMA
-Migration files: BELUM DIVERIFIKASI / NONE
+Migration files: NONE (folder supabase/migrations belum dibuat)
 Migration head: NONE
 Fresh DB apply: NOT_RUN
 Existing DB apply: NOT_RUN
@@ -884,9 +873,9 @@ Saat ini:
 
 ```text
 Blueprint documents: VERIFIED READY
-Implementation: NOT VERIFIED
-Secret safety: NOT VERIFIED
-Git: NOT VERIFIED
+Implementation: VERIFIED sampai Phase 1 (pnpm check hijau, 2026-08-09)
+Secret safety: VERIFIED (ignore + scan + client bundle)
+Git: VERIFIED (repo terisolasi, remote benar, commit 0465989)
 Supabase runtime: NOT VERIFIED
 Vercel runtime: NOT VERIFIED
 ```
@@ -1061,10 +1050,12 @@ Begitu ini beres:
 
 # 45. CURRENT BLOCKER DETAIL
 
-Saat starter ini dibuat:
-> tidak ada blocker terkonfirmasi.
+Tidak ada blocker.
 
-Agent first run harus memverifikasi sendiri.
+Yang berpotensi jadi blocker di Phase 2 dan hanya bisa diselesaikan Product Owner:
+Google Cloud OAuth consent screen dan pendaftaran redirect URI production. Kalau
+agent mentok di situ, bagian lain Phase 2 (migration, RLS dasar, Supabase client)
+tetap harus dilanjutkan.
 
 ---
 
@@ -1090,9 +1081,9 @@ First Agent belum boleh bilang Phase 0 selesai sampai:
 
 | Phase | Name | Status |
 |---:|---|---|
-| 0 | Project Intake & Safety | NOT_STARTED |
-| 1 | Repository & Runtime Foundation | NOT_STARTED |
-| 2 | Supabase + Auth + Identity | NOT_STARTED |
+| 0 | Project Intake & Safety | DONE |
+| 1 | Repository & Runtime Foundation | DONE |
+| 2 | Supabase + Auth + Identity | IN_PROGRESS |
 | 3 | RBAC + RLS + Storage Security | NOT_STARTED |
 | 4 | App Shell + Design Foundation | NOT_STARTED |
 | 5 | Case + Entity + Evidence Core | NOT_STARTED |
@@ -1116,8 +1107,8 @@ First Agent belum boleh bilang Phase 0 selesai sampai:
 
 ```text
 V1 Product Blueprint: READY
-V1 Implementation: 0%
-V1 Critical QA: 0%
+V1 Implementation: Phase 0-1 DONE, Phase 2 IN_PROGRESS, Phase 3-18 NOT_STARTED
+V1 Critical QA: build/lint/typecheck/unit/secret PASS; auth/RLS/ledger/payment belum ada
 Production Readiness: NOT_READY
 ```
 
@@ -1264,8 +1255,8 @@ Implement RDAP adapter normalization and run AT-SRC-001/002.
 
 # 55. STARTER HANDOFF
 
-Untuk Agent Coding pertama:
+Untuk Agent Coding berikutnya:
 
-> **Lo lagi masuk project Jejak pada kondisi blueprint-ready, belum implementation-ready. Mulai dari Phase 0. Jangan baca semua file dari awal. Amankan secret, cek Git, cek global skills, create/verify DECISIONS, isi nilai real di STATUS ini, lalu lanjut runtime foundation.**
+> **Phase 0 dan Phase 1 sudah beres dan terbukti (`pnpm check` hijau di commit `0465989`). Jangan init ulang project, jangan bikin app baru di subfolder, jangan ganti package manager. Lo mulai dari Phase 2: Supabase + Auth + Identity. Baca Next Safe Action di bagian 7, lalu langsung kerja.**
 
 **END OF STATUS PROJECT**
