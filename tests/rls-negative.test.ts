@@ -38,14 +38,17 @@ describe.skipIf(!adaCredential)("RLS menolak akses tamu", () => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  it.each(["profiles", "user_roles"])("tamu tidak mendapat baris dari %s", async (tabel) => {
-    const { data, error } = await tamu.from(tabel).select("*").limit(1);
+  it.each(["profiles", "user_roles", "roles", "permissions", "role_permissions"])(
+    "tamu tidak mendapat baris dari %s",
+    async (tabel) => {
+      const { data, error } = await tamu.from(tabel).select("*").limit(1);
 
-    // Boleh ditolak (error) atau dikembalikan kosong — yang dilarang adalah
-    // tamu benar-benar menerima baris data.
-    expect(error !== null || (data ?? []).length === 0).toBe(true);
-    expect(data ?? []).toHaveLength(0);
-  });
+      // Boleh ditolak (error) atau dikembalikan kosong — yang dilarang adalah
+      // tamu benar-benar menerima baris data.
+      expect(error !== null || (data ?? []).length === 0).toBe(true);
+      expect(data ?? []).toHaveLength(0);
+    },
+  );
 
   it("tamu tidak bisa menyisipkan profil", async () => {
     const { error } = await tamu
@@ -72,5 +75,33 @@ describe.skipIf(!adaCredential)("RLS menolak akses tamu", () => {
     });
 
     expect(error).not.toBeNull();
+  });
+
+  it.each(["case-attachments", "payment-proofs"])(
+    "bucket %s tidak bisa dijelajahi tamu",
+    async (bucket) => {
+      const { data, error } = await tamu.storage.from(bucket).list();
+
+      expect(error !== null || (data ?? []).length === 0).toBe(true);
+      expect(data ?? []).toHaveLength(0);
+    },
+  );
+
+  it.each(["case-attachments", "payment-proofs"])(
+    "tamu tidak bisa mengunggah ke bucket %s",
+    async (bucket) => {
+      const { error } = await tamu.storage
+        .from(bucket)
+        .upload(`uji/${bucket}-tamu.txt`, new Blob(["uji"]), { contentType: "text/plain" });
+
+      expect(error).not.toBeNull();
+    },
+  );
+
+  it("URL publik bucket privat tidak mengembalikan file", async () => {
+    const { data } = tamu.storage.from("payment-proofs").getPublicUrl("apa-saja.png");
+    const respons = await fetch(data.publicUrl);
+
+    expect(respons.ok).toBe(false);
   });
 });

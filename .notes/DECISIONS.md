@@ -2840,6 +2840,84 @@ Tidak ada
 
 ---
 
+## DEC-0107 — Bucket dibuat lebih dulu daripada fiturnya, tanpa policy client
+
+**Status:** AKTIF  
+**Phase:** 3  
+**Tanggal:** 2026-08-09
+
+### Masalah
+Case dan Payment belum ada, jadi godaannya menunda pembuatan bucket sampai fiturnya jadi. Pola itu menciptakan jeda berbahaya: file sudah bisa masuk sementara policy-nya menyusul.
+
+### Keputusan
+`case-attachments` dan `payment-proofs` dibuat sekarang dalam keadaan privat, dengan batas ukuran dan daftar MIME, dan **tanpa satu pun policy** untuk `anon`/`authenticated`. Akses file hanya lewat alur server terkontrol dan signed URL berumur pendek. Policy per-bucket ditambahkan bersama Case (Phase 5) dan Payment (Phase 9), saat model kepemilikan filenya sudah ada.
+
+### Alasan
+`storage.objects` sudah ber-RLS bawaan, jadi tanpa policy artinya tertutup penuh — default paling aman yang bisa dipilih.
+
+### Dampak
+Selama belum ada policy, tidak ada upload dari browser sama sekali. Itu memang yang diinginkan pada tahap ini.
+
+### Blueprint terkait
+`supabase/migrations/20260809165522_permissions_and_storage_security.sql`, `docs/ROADMAP.md` Phase 3.4-3.5
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0108 — Pemetaan permission staf ditulis eksplisit, bukan berjenjang
+
+**Status:** AKTIF  
+**Phase:** 3  
+**Tanggal:** 2026-08-09
+
+### Masalah
+Model peran berjenjang (admin mewarisi semua milik support, owner mewarisi semua milik admin) terlihat rapi tapi menyembunyikan kemampuan: menambah satu permission ke peran bawah diam-diam menaikkan peran atas.
+
+### Keputusan
+Setiap peran mendapat daftar permission-nya sendiri secara eksplisit. Owner memegang seluruh 24 permission karena memang pemilik; Admin 11 tanpa kepemilikan/rekening/identifier mentah; Finance 6 khusus pembayaran; Support 1; peran `user` nol.
+
+### Alasan
+Kemampuan setiap peran bisa dibaca langsung dari satu tempat, dan penambahan permission baru memaksa keputusan sadar untuk tiap peran. Peran `user` sengaja kosong karena kemampuan pengguna biasa berasal dari kepemilikan data lewat RLS, bukan dari permission staf.
+
+### Dampak
+Permission baru harus ditambahkan ke tiap peran yang membutuhkannya — sedikit lebih berisik, tapi tidak pernah ada kenaikan hak yang tidak disengaja.
+
+### Blueprint terkait
+`docs/SCHEMA.md` §5.2-5.3, `.notes/AGENTS.md` §39-40
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0109 — Status akun ikut menentukan kemampuan staf
+
+**Status:** AKTIF  
+**Phase:** 3  
+**Tanggal:** 2026-08-09
+
+### Masalah
+Kalau staf dijeda atau diblokir, mencabut perannya satu per satu itu lambat dan mudah terlewat.
+
+### Keputusan
+`app.current_user_has_permission` ikut memeriksa `profiles.account_status = 'active'` dan `deleted_at is null`. Akun yang tidak aktif kehilangan seluruh kemampuan staf seketika, tanpa perannya perlu disentuh.
+
+### Alasan
+Satu tuas untuk menghentikan seseorang, dan jejak perannya tetap utuh untuk audit maupun pemulihan.
+
+### Dampak
+Mengaktifkan kembali akun otomatis mengembalikan kemampuannya. Kalau nanti ingin pencabutan permanen, itu tetap harus lewat pencabutan peran yang teraudit.
+
+### Blueprint terkait
+`supabase/migrations/20260809165522_permissions_and_storage_security.sql`, `docs/SCHEMA.md` §5.6
+
+### Menggantikan
+Tidak ada
+
+---
+
 # 5. KEPUTUSAN YANG WAJIB DIBUAT SAAT IMPLEMENTASI BILA RELEVAN
 
 Saat Agent benar-benar menjalankan project, keputusan berikut belum boleh diasumsikan dan harus dicatat jika significant:

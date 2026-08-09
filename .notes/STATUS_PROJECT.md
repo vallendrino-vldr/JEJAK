@@ -36,9 +36,9 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 **Current Phase:** `PHASE 2 — Supabase + Auth + Identity`  
 **Current Milestone:** `Aktifkan Google provider, lalu uji login end-to-end`  
 **Current Branch:** `main`  
-**Latest Commit:** `ad1b0ab` — feat(auth): identity schema with deny-by-default RLS and Google OAuth SSR  
+**Latest Commit:** lihat `git log -1` — checkpoint terakhir: permission catalog + bucket privat  
 **Latest Deploy:** `BELUM ADA` (Vercel belum di-link)  
-**Database Migration Head:** `20260809164435_expose_role_catalog_read`  
+**Database Migration Head:** `20260809165522_permissions_and_storage_security`  
 **App Version:** `0.1.0`  
 **Environment:** `.env.local` terisi lengkap (Supabase URL/publishable/secret/JWKS, 4 Gemini, 4 Groq), file ignored  
 **Production Status:** `BELUM PRODUCTION`  
@@ -191,11 +191,16 @@ Jangan minta Product Owner mengulang keputusan berikut.
 - [x] Supabase SSR client: browser, server, proxy — semuanya pakai kunci publishable lewat RLS
 - [x] Alur Google OAuth di sisi aplikasi: start, callback PKCE, keluar, halaman `/masuk` dan `/beranda`
 - [x] Test negatif RLS terhadap database sungguhan: tamu tidak bisa baca/insert/escalate
+- [x] Phase 3 sebagian: 24 permission, pemetaan peran (owner 24 / admin 11 / finance 6 / support 1 / user 0)
+- [x] Helper `app.current_user_has_permission` — akun non-`active` otomatis kehilangan kemampuan staf
+- [x] Dua bucket privat (`case-attachments`, `payment-proofs`) tanpa satu pun policy client
+- [x] Test negatif storage: tamu tidak bisa list, upload, maupun ambil lewat URL publik
 
 ## Belum Dimulai / Belum Diverifikasi
 - [ ] Google provider di Supabase (lihat Blocker) — login end-to-end belum bisa diuji
+- [ ] Bukti Phase 3 yang butuh akun sungguhan: user A vs user B, Finance bukan Case admin, Support tanpa data mentah, user biasa tidak bisa menetapkan peran
+- [ ] Policy storage per-bucket (menyusul bersama Case di Phase 5 dan Payment di Phase 9)
 - [ ] Wallet/kredit awal saat user baru (dijadwalkan Phase 6, initializer server)
-- [ ] Permissions + role_permissions (Phase 3)
 - [ ] RLS implementation
 - [ ] Storage policies
 - [ ] App Shell
@@ -473,8 +478,9 @@ Legend:
 | Production Build | PASS | 2026-08-09 | `next build` 3 route |
 | Typecheck | PASS | 2026-08-09 | strict |
 | Lint | PASS | 2026-08-09 | `--max-warnings=0` |
-| Unit Tests | PASS | 2026-08-09 | 21 test |
+| Unit Tests | PASS | 2026-08-09 | 29 test |
 | RLS (tamu ditolak) | PASS | 2026-08-09 | `tests/rls-negative.test.ts` lawan DB sungguhan |
+| Storage tertutup | PASS | 2026-08-09 | 2 bucket privat, 0 policy client, URL publik gagal |
 | RLS (user A vs user B) | NOT_RUN | - | Butuh dua akun test, menunggu login hidup |
 | Google Auth | NOT_RUN | - | Provider belum aktif |
 | Session | NOT_RUN | - | Menunggu login hidup |
@@ -854,11 +860,13 @@ Migration strategy: imperative, ditulis tangan di supabase/migrations
 Migration files:
   20260809163905_identity_and_rbac_foundation.sql
   20260809164435_expose_role_catalog_read.sql
-Migration head: 20260809164435_expose_role_catalog_read
+  20260809165522_permissions_and_storage_security.sql
+Migration head: 20260809165522_permissions_and_storage_security
 Fresh DB apply: NOT_RUN (butuh Docker untuk stack lokal)
 Existing DB apply: PASS (remote, 2026-08-09)
-RLS policies: profiles 2, user_roles 1, roles 1 — RLS aktif di ketiganya
-Seed data: 5 peran sistem (owner/admin/finance/support/user)
+RLS policies: profiles 2, user_roles 1, roles 1, permissions 1, role_permissions 0 — RLS aktif di semuanya
+Storage: bucket case-attachments + payment-proofs, keduanya privat, 0 policy client
+Seed data: 5 peran sistem + 24 permission + pemetaan role_permissions
 ```
 
 Setelah Agent membuat migration:
@@ -1129,7 +1137,8 @@ First Agent belum boleh bilang Phase 0 selesai sampai:
 |---:|---|---|
 | 0 | Project Intake & Safety | DONE |
 | 1 | Repository & Runtime Foundation | DONE |
-| 2 | Supabase + Auth + Identity | IN_PROGRESS |
+| 2 | Supabase + Auth + Identity | IN_PROGRESS (blocked: Google provider) |
+| 3 | RBAC + RLS + Storage Security | IN_PROGRESS |
 | 3 | RBAC + RLS + Storage Security | NOT_STARTED |
 | 4 | App Shell + Design Foundation | NOT_STARTED |
 | 5 | Case + Entity + Evidence Core | NOT_STARTED |
@@ -1153,8 +1162,8 @@ First Agent belum boleh bilang Phase 0 selesai sampai:
 
 ```text
 V1 Product Blueprint: READY
-V1 Implementation: Phase 0-1 DONE, Phase 2 IN_PROGRESS, Phase 3-18 NOT_STARTED
-V1 Critical QA: build/lint/typecheck/unit/secret PASS; auth/RLS/ledger/payment belum ada
+V1 Implementation: Phase 0-1 DONE, Phase 2-3 IN_PROGRESS, Phase 4-18 NOT_STARTED
+V1 Critical QA: build/lint/typecheck/unit/secret/RLS-tamu/storage PASS; login, RLS antar-user, ledger, payment belum
 Production Readiness: NOT_READY
 ```
 
