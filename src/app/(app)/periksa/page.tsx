@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SearchConsole } from "@/components/periksa/search-console";
 import { deteksiIdentifier, type JenisIdentifier } from "@/lib/periksa/deteksi";
+import { actionMulaiPemeriksaan } from "./actions";
 
 export const metadata: Metadata = { title: "Periksa" };
 
@@ -68,6 +69,14 @@ export default async function PeriksaPage({
             Mesin pemeriksaannya masih dibangun. Selama itu, JEJAK nggak bakal nampilin hasil apa
             pun — mendingan kosong daripada ngarang.
           </p>
+
+          <form action={actionMulaiPemeriksaan} className="mt-8">
+            <input type="hidden" name="masukan" value={masukan} />
+            <input type="hidden" name="jenis" value={deteksi.jenis} />
+            <button type="submit" className="tombol tombol-utama">
+              Mulai Pemeriksaan (1 Kredit)
+            </button>
+          </form>
         </section>
       ) : (
         <p className="kosong">

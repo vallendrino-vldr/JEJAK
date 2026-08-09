@@ -33,17 +33,17 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 **Project:** JEJAK  
 **Domain produksi:** `https://www.cekjejak.my.id` (kanonik; apex `cekjejak.my.id` redirect ke sini — lihat DEC-0110)  
 **Status besar:** Phase 0-5 selesai. Entity graph, merge logis (reversible), dan attachment foundation telah diimplementasi via fungsi Security Definer beserta RLS bucket private, diuji via invariant tests.  
-**Current Phase:** `PHASE 6 — Credit Ledger + Pricing`  
-**Current Milestone:** `Membangun fondasi dompet, mutasi kredit (FEFO), dan pembekuan (hold) secara atomik di DB`  
+**Current Phase:** `PHASE 7 — Scan Engine + Source Registry`  
+**Current Milestone:** `Vertical slice Scan Engine + Source Registry (DB Foundation)`  
 **Current Branch:** `main`  
 **Latest Commit:** `1eb819c` — feat(db): implement entity merge and case attachments  
 **Latest Deploy:** produksi otomatis dari `main` di `https://www.cekjejak.my.id`, region `sin1`. Cek versi live: `curl https://www.cekjejak.my.id/api/version`  
-**Database Migration Head:** `20260810035502_fix_attachment_updated_at`  
+**Database Migration Head:** `20260810042000_source_registry_and_scan_targets`  
 **App Version:** `0.1.0`  
 **Environment:** `.env.local` terisi lengkap (Supabase URL/publishable/secret/JWKS, 4 Gemini, 4 Groq), file ignored  
 **Production Status:** `BELUM PRODUCTION`  
 **GitHub Quality Gate:** HIJAU di `main` (commit 1eb819c)  
-**Last Updated By:** `Antigravity — Phase 5 completion`  
+**Last Updated By:** `Antigravity — Phase 7 DB foundation`  
 **Last Updated At:** `2026-08-10`
 
 ---
@@ -299,16 +299,16 @@ Jangan baca "ada menunya" sebagai "sudah jadi". Empat tingkat:
 
 ## Next Safe Action Saat Ini
 
-**Mulai Phase 6: Credit Ledger + Pricing.** Phase 5 sudah selesai seluruhnya.
+**Mulai Phase 7: Scan Engine + Source Registry.** Phase 6 sudah diverifikasi sehat. Migrasi dasar untuk Scan Targets, Source Registry, dan Scan Source Runs sudah di-push (`20260810042000`).
 
 Lakukan berurutan:
 
-1. Baca `docs/SCHEMA.md` bagian 12 (Scan Product / Pricing Model) dan aturan Phase 6 Credit Ledger (dompet, holds, FEFO, mutasi atomik).
-2. Buat tabel `wallets`, `credit_lots`, `credit_holds`, `ledger_entries`, `scan_products`, dan `scan_quotes` dalam skema migrasi baru.
-3. Terapkan invariant PostgreSQL (contoh: fungsi transaksi saldo FEFO yang mencegah race condition).
-4. Buat tes invarian untuk dompet dan transaksi finansial di `supabase/tests/`.
-5. Jalankan `pnpm check` dan `pnpm gate:integrasi` (wajib hijau).
-6. Implementasikan API atau Service Layer di Next.js untuk melihat saldo dan riwayat (Ruang Kendali/Dompet UI).
+1. Buat tests/invaiant di `supabase/tests/` untuk Source Registry & Scan targets/runs jika diperlukan.
+2. Buat internal adapter pertama atau framework service untuk Scan Engine di backend (TypeScript).
+3. Jalankan `pnpm check` dan `pnpm gate:integrasi` (wajib hijau).
+4. Sambungkan UI atau sistem event untuk menampilkan progres pemeriksaan kepada user.
+
+
 
 ### Yang TIDAK boleh diubah tanpa alasan kuat
 
