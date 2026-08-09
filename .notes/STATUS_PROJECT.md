@@ -30,20 +30,20 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 
 # 1. SNAPSHOT SAAT INI
 
-**Project:** Jejak  
+**Project:** JEJAK  
 **Domain produksi:** `https://www.cekjejak.my.id` (kanonik; apex `cekjejak.my.id` redirect ke sini — lihat DEC-0110)  
-**Status besar:** Phase 0-3 selesai. Phase 4 hidup tapi belum visual-complete (landing belum ada). Phase 5 pola intinya sudah terbukti: Kasus, petunjuk terenkripsi, Evidence Passport, hubungan, dan linimasa — semuanya dijaga constraint database dan diuji.  
+**Status besar:** Phase 0-4 selesai. Phase 5 pola intinya sudah terbukti: Kasus, petunjuk terenkripsi, Evidence Passport, hubungan, dan linimasa — semuanya dijaga constraint database dan diuji. Landing produksi hidup.  
 **Current Phase:** `PHASE 5 — Case + Entity + Evidence Core` (pola inti selesai; graph/merge/attachment belum)  
-**Current Milestone:** `Landing page produksi + tutup sisa Phase 4/5, lalu Phase 6`  
+**Current Milestone:** `Sisa Phase 5 (graph, merge, attachment), lalu Phase 6`  
 **Current Branch:** `main`  
-**Latest Commit:** `0d7d83d` — feat(bukti): Evidence Passport, relationships, and a timeline that cannot invent dates  
+**Latest Commit:** `2142a52` — feat(landing): production landing page with interactive demo, brand audit, and micro-motion  
 **Latest Deploy:** produksi otomatis dari `main` di `https://www.cekjejak.my.id`, region `sin1`. Cek versi live: `curl https://www.cekjejak.my.id/api/version`  
 **Database Migration Head:** `20260809195402_decision_marker_survives_deletion`  
 **App Version:** `0.1.0`  
 **Environment:** `.env.local` terisi lengkap (Supabase URL/publishable/secret/JWKS, 4 Gemini, 4 Groq), file ignored  
 **Production Status:** `BELUM PRODUCTION`  
-**GitHub Quality Gate:** HIJAU di `main` (run 31332309272)  
-**Last Updated By:** `Claude Code — stabilization sprint`  
+**GitHub Quality Gate:** HIJAU di `main` (commit 2142a52)  
+**Last Updated By:** `Antigravity — landing + brand audit`  
 **Last Updated At:** `2026-08-10`
 
 ---
@@ -294,45 +294,27 @@ Jangan baca "ada menunya" sebagai "sudah jadi". Empat tingkat:
 | Kabar | visual shell | belum ada sumber notifikasi |
 | Mata Jejak | visual shell | maskot + panduan statis; asisten AI belum |
 | Ruang Kendali | belum ada | tautan rail mengarah ke route yang belum dibuat |
-| Landing produksi | belum ada | lihat Known Issues |
+| Landing produksi | production functional | hero, demo interaktif, CTA, fitur, PWA teaser |
 | Graph, merge, attachment | belum ada | sisa Phase 5 |
 
 ## Next Safe Action Saat Ini
 
-**Bangun landing page produksi.** Ini satu-satunya bagian Phase 4 yang belum ada,
-dan pengunjung yang belum login sekarang mendarat di halaman fondasi lama.
+**Lanjut sisa Phase 5: graph, merge entitas, dan attachment.** Landing produksi
+sudah hidup di `https://www.cekjejak.my.id`. Phase 4 visual-complete.
 
-Lakukan berurutan, jangan lompat:
+Lakukan berurutan:
 
-1. Ganti isi `src/app/page.tsx`. Pakai komponen yang sudah ada — jangan bikin
-   sistem desain baru: `Wordmark` dari `src/components/merek.tsx` (ukuran
-   `besar`), `Aurora` dari `src/components/aurora.tsx`, `MataJejak` dari
-   `src/components/mata-jejak.tsx`. Token warna ambil dari `src/app/globals.css`;
-   dilarang menulis kode hex baru di komponen.
-2. Isi wajib landing, urut dari atas: wordmark `JEJAK`; kalimat
-   `Periksa sebelum percaya.`; demo interaktif lokal; tombol masuk Google;
-   ajakan `Pasang Jejak`; penutup
-   `Bisa mulai gratis. Nggak perlu kartu kredit.`
-3. Demo interaktif **wajib 100% lokal**. Pakai `deteksiIdentifier` dari
-   `src/lib/periksa/deteksi.ts` untuk memperlihatkan deteksi jenis input secara
-   nyata. Jangan panggil API apa pun, jangan tampilkan hasil pemeriksaan palsu,
-   jangan bikin persentase karangan.
-4. Tombol masuk harus berupa tautan `<a href="/auth/masuk-google?lanjut=%2Fberanda">`,
-   bukan form. Alasannya di DEC-0113 — form POST ke Google diblokir CSP.
-   Jangan ubah `next.config.ts` untuk mengakalinya.
-5. `Pasang Jejak` untuk sekarang cukup tautan/tombol yang menjelaskan PWA
-   menyusul di Phase 13. Jangan bikin service worker sekarang — itu Phase 13 dan
-   punya gate sendiri.
-6. Landing tidak boleh menyebabkan scroll halaman global. Ikuti pola
-   `.foundation-shell` yang sudah ada, atau bikin region scroll internal.
+1. Baca `docs/SCHEMA.md` bagian entity graph, merge, dan attachment.
+2. Buat migration untuk tabel entity graph (jika belum ada). RLS + grant
+   per kolom, penulisan lewat fungsi SECURITY DEFINER.
+3. Implement merge entitas yang bisa dibatalkan.
+4. Implement attachment case (file upload ke `case-attachments` bucket).
+5. Tambahkan invariant ke `supabase/tests/`.
+6. Wire UI jika sudah ada komponen yang relevan.
 7. Jalankan `pnpm check`, lalu `pnpm gate:integrasi`. Dua-duanya harus hijau.
-8. Commit, push, tunggu GitHub Actions hijau, lalu cek
-   `https://www.cekjejak.my.id` beneran berubah.
+8. Commit, push, tunggu GitHub Actions hijau.
 
-Sesudah landing beres, baru lanjut ke sisa Phase 5 (graph, merge entitas yang
-bisa dibatalkan, attachment) — **bukan** ke Phase 6. Ikuti pola yang sudah ada:
-tabel baru selalu RLS + grant per kolom, penulisan lewat fungsi SECURITY DEFINER,
-lalu tambahkan invariant ke `supabase/tests/`.
+Sesudah sisa Phase 5 beres, lanjut ke Phase 6 (Credit Ledger + Pricing).
 
 ### Yang TIDAK boleh diubah tanpa alasan kuat
 
@@ -711,7 +693,6 @@ Cukup summary per suite + failing IDs.
 
 # 19. KNOWN ISSUES
 
-- **Landing produksi belum dibangun.** `/` masih halaman fondasi lama. Phase 4 belum boleh dianggap visual-complete sampai landing memuat: wordmark `JEJAK`, kalimat `Periksa sebelum percaya.`, demo interaktif lokal, tombol masuk Google, ajakan `Pasang Jejak`, dan penutup `Bisa mulai gratis. Nggak perlu kartu kredit.`
 - **Rail desktop menautkan `/ruang-kendali` yang belum ada** — Owner/Admin yang mengekliknya dapat 404. Route-nya milik Phase 10.
 - Dompet, Kabar, dan Mata Jejak baru cangkang: panelnya jujur menyebut belum aktif, tapi belum tersambung ke apa pun.
 - Sisa Phase 5 belum: graph, merge entitas yang bisa dibatalkan, attachment, kontradiksi sebagai fitur (jenis hubungannya sudah ada).
