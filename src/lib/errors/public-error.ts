@@ -11,6 +11,18 @@ export const publicErrorCatalog = {
     message: "Permintaannya lagi terlalu ramai. Coba lagi sebentar.",
     status: 429,
   },
+  "JX-2001": {
+    message: "Kami belum bisa membuka halaman Google. Coba lagi sebentar.",
+    status: 502,
+  },
+  "JX-2002": {
+    message: "Proses masuknya belum selesai. Coba mulai lagi dari awal.",
+    status: 400,
+  },
+  "JX-2003": {
+    message: "Tautan masuknya sudah tidak berlaku. Coba masuk lagi.",
+    status: 401,
+  },
 } as const;
 
 export type PublicErrorCode = keyof typeof publicErrorCatalog;
