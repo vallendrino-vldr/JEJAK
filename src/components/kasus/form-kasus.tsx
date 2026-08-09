@@ -43,7 +43,7 @@ export function FormBuatKasus() {
         <span>
           Jadikan kasus rahasia
           <span className="form-bantuan">
-            Judul dan isinya nggak akan muncul di pratinjau atau notifikasi.
+            Judul sama isinya nggak bakal muncul di pratinjau atau notifikasi.
           </span>
         </span>
       </label>
@@ -74,7 +74,7 @@ export function FormTambahPetunjuk({ caseId }: { caseId: string }) {
         id="nilai"
         name="nilai"
         className="isian"
-        placeholder="Email, nomor HP, nama, username, atau domain"
+        placeholder="Tambah petunjuk: email, nomor HP, nama, username, domain"
         autoComplete="off"
         required
       />

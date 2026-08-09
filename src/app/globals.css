@@ -1,35 +1,58 @@
 /*
- * Design token Jejak — Obsidian Intelligence.
+ * Design token Jejak — OBSIDIAN AURORA.
  *
- * Nilai final dipilih di sini dan menjadi satu-satunya sumber. Komponen tidak
- * boleh menulis warna, radius, atau durasi mentah; ambil dari variabel ini.
+ * Dark premium yang dingin dan segar. Emas tidak lagi jadi aksen merek; ia
+ * hanya muncul untuk peringatan dan status langka, seperlunya.
+ *
+ * Dua lapis: nilai mentah di atas, nama semantik di bawah. Komponen memakai
+ * nama semantik, jadi mengganti arah visual cukup di berkas ini.
  */
 :root {
   color-scheme: dark;
 
-  /* Permukaan: near-black bernuansa, bukan hitam murni. */
-  --obsidian: #08090b;
-  --obsidian-naik: #0d0f12;
-  --charcoal: #14171b;
-  --charcoal-naik: #1b1f24;
-  --kaca: rgba(25, 28, 32, 0.72);
-  --kaca-tipis: rgba(255, 255, 255, 0.04);
+  /* --- Lapis 1: palet mentah --- */
+  --canvas: #061015;
+  --surface: #0b171d;
+  --surface-raised: #102029;
+  --text-primary: #f2f8fa;
+  --text-secondary: #93aab3;
+  --brand-cyan: #52d7ff;
+  --aurora-mint: #65f0c5;
+  --ice-highlight: #cff7ff;
+  --violet-accent: #8f87ff;
+  --amber-warning: #f2c261;
+  --crimson-risk: #ff8a80;
 
-  /* Struktur */
-  --garis: rgba(255, 255, 255, 0.1);
-  --garis-terang: rgba(255, 255, 255, 0.16);
+  /* --- Lapis 2: nama semantik --- */
+
+  /* Permukaan */
+  --obsidian: var(--canvas);
+  --obsidian-naik: var(--surface);
+  --charcoal: var(--surface);
+  --charcoal-naik: var(--surface-raised);
+  --kaca: rgba(16, 32, 41, 0.72);
+  --kaca-tipis: rgba(207, 247, 255, 0.05);
+
+  /* Struktur — bernuansa dingin, bukan abu netral. */
+  --garis: rgba(147, 170, 179, 0.16);
+  --garis-terang: rgba(207, 247, 255, 0.24);
 
   /* Teks */
-  --ivory: #f4f1e9;
-  --titanium: #a6a39b;
-  --titanium-redup: #74736e;
+  --ivory: var(--text-primary);
+  --titanium: var(--text-secondary);
+  --titanium-redup: #63808b;
+
+  /* Aksen merek */
+  --aksen: var(--brand-cyan);
+  --aksen-lembut: rgba(82, 215, 255, 0.14);
+  --aksen-kuat: rgba(82, 215, 255, 0.42);
 
   /* Status — tidak pernah jadi satu-satunya pembeda. */
-  --amber: #d7b874;
-  --amber-lembut: rgba(215, 184, 116, 0.16);
-  --crimson: #d97066;
-  --hijau: #7fb996;
-  --baja: #7fa3c4;
+  --amber: var(--amber-warning);
+  --amber-lembut: rgba(242, 194, 97, 0.14);
+  --crimson: var(--crimson-risk);
+  --hijau: var(--aurora-mint);
+  --baja: var(--brand-cyan);
 
   /* Spacing: langkah 4px. */
   --r1: 4px;
@@ -47,14 +70,16 @@
   --lengkung-penuh: 999px;
 
   /* Bayangan dan cahaya */
-  --angkat: 0 18px 48px rgba(0, 0, 0, 0.42);
-  --angkat-tinggi: 0 28px 80px rgba(0, 0, 0, 0.5);
-  --kilau-dalam: inset 0 1px rgba(255, 255, 255, 0.07);
+  --angkat: 0 18px 48px rgba(2, 10, 14, 0.55);
+  --angkat-tinggi: 0 28px 80px rgba(2, 10, 14, 0.62);
+  --kilau-dalam: inset 0 1px rgba(207, 247, 255, 0.09);
+  --pendar-aksen: 0 0 24px rgba(82, 215, 255, 0.28);
 
   /* Durasi: tiga kategori rasa, bukan satu default. */
   --mikro: 110ms;
   --panel: 240ms;
   --reveal: 420ms;
+  --ambient: 26s;
   --lengkung-gerak: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* Ukuran shell */
@@ -112,7 +137,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--amber);
+  outline: 2px solid var(--aksen);
   outline-offset: 3px;
   border-radius: var(--r1);
 }
@@ -123,7 +148,7 @@ button {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  scrollbar-color: rgba(147, 170, 179, 0.28) transparent;
 }
 
 .gulir::-webkit-scrollbar {
@@ -133,7 +158,7 @@ button {
 .gulir::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: var(--lengkung-penuh);
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(147, 170, 179, 0.28);
   background-clip: content-box;
 }
 
@@ -158,22 +183,10 @@ button {
   overflow: hidden;
   padding: calc(var(--r5) + var(--aman-atas)) calc(var(--r4) + var(--aman-kanan))
     calc(var(--r5) + var(--aman-bawah)) calc(var(--r4) + var(--aman-kiri));
-  background:
-    radial-gradient(circle at 50% 18%, rgba(215, 184, 116, 0.11), transparent 36%),
-    linear-gradient(145deg, #0b0d10 0%, #060708 68%);
+  background: var(--canvas);
 }
 
-.foundation-shell::before {
-  position: absolute;
-  width: min(70vw, 520px);
-  aspect-ratio: 1;
-  border: 1px solid rgba(215, 184, 116, 0.1);
-  border-radius: 50%;
-  content: "";
-  box-shadow:
-    0 0 0 28px rgba(255, 255, 255, 0.012),
-    0 0 100px rgba(215, 184, 116, 0.05);
-}
+/* Lapisan aurora dipasang lewat .aurora, bukan pseudo-element halaman. */
 
 .foundation-card {
   position: relative;
@@ -191,7 +204,7 @@ button {
 
 .foundation-kicker {
   margin: 0 0 var(--r4);
-  color: var(--amber);
+  color: var(--aksen);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -221,10 +234,10 @@ button {
   min-height: 44px;
   margin: 0 0 var(--r4);
   padding: 0 var(--r4);
-  border: 1px solid rgba(215, 184, 116, 0.24);
+  border: 1px solid var(--aksen-kuat);
   border-radius: var(--lengkung-penuh);
-  color: #e9dec5;
-  background: var(--amber-lembut);
+  color: var(--ice-highlight);
+  background: var(--aksen-lembut);
   font-size: 0.9rem;
   font-weight: 650;
 }
@@ -233,8 +246,8 @@ button {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--amber);
-  box-shadow: 0 0 14px rgba(215, 184, 116, 0.7);
+  background: var(--aksen);
+  box-shadow: var(--pendar-aksen);
   content: "";
 }
 
@@ -251,12 +264,18 @@ button {
   justify-content: center;
   min-height: 48px;
   padding: 0 var(--r5);
-  border: 1px solid rgba(215, 184, 116, 0.34);
+  border: 1px solid var(--aksen-kuat);
   border-radius: var(--lengkung-penuh);
-  color: #f7efdc;
-  background: linear-gradient(160deg, rgba(215, 184, 116, 0.26), rgba(215, 184, 116, 0.1));
-  font-weight: 650;
+  color: #04222c;
+  background: linear-gradient(
+    150deg,
+    var(--ice-highlight),
+    var(--brand-cyan) 55%,
+    var(--aurora-mint)
+  );
+  font-weight: 680;
   text-decoration: none;
+  box-shadow: var(--pendar-aksen);
   transition: transform var(--mikro) var(--lengkung-gerak);
 }
 
@@ -292,5 +311,166 @@ button {
   50% {
     opacity: 0.45;
     transform: scale(0.82);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Merek JEJAK                                                      */
+/* ---------------------------------------------------------------- */
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  line-height: 1;
+  user-select: none;
+}
+
+.wordmark-glif {
+  width: 1.35em;
+  height: 1.35em;
+  flex-shrink: 0;
+}
+
+.wordmark-teks {
+  color: var(--ivory);
+  font-weight: 700;
+  /* Jarak huruf lebar adalah yang membedakannya dari teks biasa. */
+  letter-spacing: 0.26em;
+  /* Spasi kanan mengimbangi letter-spacing pada huruf terakhir. */
+  padding-left: 0.02em;
+  text-indent: 0.02em;
+}
+
+.wordmark-j {
+  color: var(--brand-cyan);
+}
+
+.wordmark-kecil {
+  font-size: 0.82rem;
+}
+
+.wordmark-sedang {
+  font-size: 1rem;
+}
+
+.wordmark-besar {
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+}
+
+/* ---------------------------------------------------------------- */
+/* Mata Jejak                                                       */
+/* ---------------------------------------------------------------- */
+
+.mata-glif {
+  width: 100%;
+  height: 100%;
+}
+
+.mata-iris {
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mata-halo {
+    animation: mata-bernapas 7s ease-in-out infinite;
+  }
+
+  .mata-iris {
+    animation: mata-iris-bernapas 7s ease-in-out infinite;
+  }
+}
+
+@keyframes mata-bernapas {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes mata-iris-bernapas {
+  50% {
+    transform: scale(0.94);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Aurora ambient                                                    */
+/*                                                                   */
+/* Dua pita cahaya yang bergerak sangat lambat plus butiran halus.    */
+/* Semuanya CSS: tidak ada canvas, tidak ada WebGL, tidak ada         */
+/* dependency, dan tidak ada beban saat idle selain compositing.      */
+/* ---------------------------------------------------------------- */
+
+.aurora {
+  position: absolute;
+  z-index: 0;
+  overflow: hidden;
+  inset: 0;
+  pointer-events: none;
+}
+
+.aurora::before,
+.aurora::after {
+  position: absolute;
+  border-radius: 50%;
+  content: "";
+  filter: blur(80px);
+}
+
+.aurora::before {
+  top: -30%;
+  left: -20%;
+  width: 90vmax;
+  height: 70vmax;
+  background: radial-gradient(
+    circle at 40% 40%,
+    rgba(82, 215, 255, 0.16),
+    rgba(82, 215, 255, 0) 62%
+  );
+}
+
+.aurora::after {
+  right: -30%;
+  bottom: -35%;
+  width: 80vmax;
+  height: 65vmax;
+  background: radial-gradient(
+    circle at 55% 45%,
+    rgba(101, 240, 197, 0.12),
+    rgba(143, 135, 255, 0.08) 45%,
+    rgba(101, 240, 197, 0) 68%
+  );
+}
+
+/* Butiran: memberi tekstur agar permukaan gelap tidak terlihat rata dan murah. */
+.aurora-butir {
+  position: absolute;
+  opacity: 0.5;
+  inset: 0;
+  background-image: radial-gradient(rgba(207, 247, 255, 0.055) 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .aurora::before {
+    animation: aurora-hanyut-a var(--ambient) ease-in-out infinite alternate;
+  }
+
+  .aurora::after {
+    animation: aurora-hanyut-b calc(var(--ambient) * 1.4) ease-in-out infinite alternate;
+  }
+}
+
+@keyframes aurora-hanyut-a {
+  to {
+    transform: translate3d(6%, 8%, 0) scale(1.12);
+  }
+}
+
+@keyframes aurora-hanyut-b {
+  to {
+    transform: translate3d(-7%, -6%, 0) scale(1.08);
   }
 }

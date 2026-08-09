@@ -27,7 +27,7 @@ export function SearchConsole({ nilaiAwal = "" }: { nilaiAwal?: string }) {
         router.push(`/periksa?q=${encodeURIComponent(nilai.trim())}`);
       }}
     >
-      <div className="konsol-cincin">
+      <div className="konsol-cincin" data-terdeteksi={deteksi ? "ya" : undefined}>
         <label className="hanya-pembaca-layar" htmlFor="konsol-input">
           Yang mau lo periksa
         </label>
@@ -36,7 +36,7 @@ export function SearchConsole({ nilaiAwal = "" }: { nilaiAwal?: string }) {
           className="konsol-input"
           value={nilai}
           onChange={(event) => setNilai(event.target.value)}
-          placeholder="Masukkan email, nomor HP, nama, username, atau domain"
+          placeholder="Masukin satu hal yang mau lo periksa"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -64,7 +64,7 @@ export function SearchConsole({ nilaiAwal = "" }: { nilaiAwal?: string }) {
             ) : null}
           </>
         ) : (
-          <span className="konsol-ragu">Ketik satu hal yang mau lo periksa.</span>
+          <span className="konsol-ragu">Email, nomor HP, nama, username, atau domain.</span>
         )}
       </p>
     </form>

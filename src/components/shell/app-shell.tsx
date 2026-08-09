@@ -10,13 +10,14 @@ import {
   IkonKabar,
   IkonKasus,
   IkonKembali,
-  IkonMataJejak,
   IkonPeriksa,
   IkonRuangKendali,
   IkonSegarkan,
   IkonTutup,
-  TandaJejak,
 } from "@/components/ikon";
+import { Aurora } from "@/components/aurora";
+import { MataJejak } from "@/components/mata-jejak";
+import { Wordmark } from "@/components/merek";
 
 export type RingkasanSesi = {
   namaTampilan: string;
@@ -71,13 +72,12 @@ export function AppShell({ sesi, children }: { sesi: RingkasanSesi; children: Re
 
   return (
     <div className="shell">
+      <Aurora />
+
       <header className="shell-atas">
         <div className="shell-atas-kiri">
           {diBerandaUtama ? (
-            <span className="shell-tanda">
-              <TandaJejak />
-              <span className="shell-tanda-teks">Jejak</span>
-            </span>
+            <Wordmark ukuran="kecil" />
           ) : (
             <button type="button" className="kontrol" onClick={() => router.back()}>
               <IkonKembali />
@@ -169,7 +169,7 @@ export function AppShell({ sesi, children }: { sesi: RingkasanSesi; children: Re
         onClick={() => setPanel("mata")}
         aria-expanded={panel === "mata"}
       >
-        <IkonMataJejak />
+        <MataJejak />
         <span className="hanya-pembaca-layar">Mata Jejak — panduan</span>
       </button>
 

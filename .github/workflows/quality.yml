@@ -55,8 +55,16 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      # Build memerlukan variabel client agar halaman bisa dirender. Nilai di
+      # bawah sengaja palsu dan tidak menunjuk ke project mana pun: yang diuji
+      # di sini adalah "kodenya bisa dibangun", bukan konfigurasinya. Artefak
+      # build ini tidak pernah dideploy — Vercel membangun ulang dengan
+      # environment-nya sendiri.
       - name: Production build
         run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://contoh-ci-bukan-project-nyata.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder_bukan_kunci_nyata
 
       - name: Production dependency audit
         run: pnpm security:audit

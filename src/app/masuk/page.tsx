@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Aurora } from "@/components/aurora";
+import { Wordmark } from "@/components/merek";
 import { bacaSesiPengguna } from "@/lib/auth/session";
 import { tujuanAman } from "@/lib/auth/tujuan";
 import { publicErrorCatalog, type PublicErrorCode } from "@/lib/errors/public-error";
@@ -30,8 +32,9 @@ export default async function MasukPage({
 
   return (
     <main className="foundation-shell">
+      <Aurora />
       <section className="foundation-card" aria-labelledby="masuk-title">
-        <p className="foundation-kicker">Jejak</p>
+        <Wordmark ukuran="besar" />
         <h1 id="masuk-title">Masuk dulu, baru periksa.</h1>
         <p className="foundation-copy">
           Jejak memakai akun Google supaya lo nggak perlu bikin kata sandi baru.

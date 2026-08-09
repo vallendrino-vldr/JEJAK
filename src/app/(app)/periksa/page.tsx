@@ -65,14 +65,14 @@ export default async function PeriksaPage({
             ))}
           </ul>
           <p className="catatan">
-            Mesin pemeriksaannya lagi dibangun. Sampai itu jalan, Jejak nggak akan menampilkan hasil
-            apa pun — lebih baik kosong daripada mengarang.
+            Mesin pemeriksaannya masih dibangun. Selama itu, Jejak nggak bakal nampilin hasil apa
+            pun — mendingan kosong daripada ngarang.
           </p>
         </section>
       ) : (
         <p className="kosong">
-          Ketik satu hal di kotak di atas. Jejak bakal kasih tahu itu terbaca sebagai apa sebelum
-          apa pun dikerjakan.
+          Masukin satu hal di kotak atas. Jejak bakal bilang itu kebaca sebagai apa sebelum ada yang
+          dikerjain.
         </p>
       )}
     </div>

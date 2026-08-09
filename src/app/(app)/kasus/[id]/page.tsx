@@ -33,7 +33,7 @@ export default async function DetailKasusPage({ params }: { params: Promise<{ id
         <h1 className="hero-judul">{kasus.title}</h1>
         <p className="hero-teks">
           Dibuat {formatTanggal.format(new Date(kasus.created_at))}. Semua petunjuk di bawah
-          disimpan terenkripsi; yang lo lihat adalah bentuk tersamarnya.
+          disimpen terenkripsi — yang lo lihat cuma bentuk samarnya.
         </p>
       </section>
 
@@ -46,8 +46,8 @@ export default async function DetailKasusPage({ params }: { params: Promise<{ id
 
         {petunjuk.length === 0 ? (
           <p className="kosong">
-            Belum ada petunjuk. Tambahkan email, nomor HP, nama, username, atau domain yang mau lo
-            telusuri.
+            Belum ada petunjuk. Tambahin email, nomor HP, nama, username, atau domain yang mau lo
+            telusurin.
           </p>
         ) : (
           <ul className="daftar">
@@ -68,8 +68,8 @@ export default async function DetailKasusPage({ params }: { params: Promise<{ id
           Bukti
         </h2>
         <p className="kosong">
-          Belum ada bukti. Bukti masuk dari hasil pemeriksaan, dan mesin pemeriksaannya lagi
-          dibangun. Jejak nggak akan mengisi bagian ini dengan tebakan.
+          Belum ada bukti. Bukti masuk dari hasil pemeriksaan, dan mesinnya masih dibangun. Jejak
+          nggak bakal ngisi bagian ini pakai tebakan.
         </p>
       </section>
     </div>

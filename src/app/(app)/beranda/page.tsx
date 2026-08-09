@@ -9,17 +9,17 @@ const PINTASAN = [
   {
     href: "/jejak-gue",
     judul: "Cek data gue",
-    teks: "Lihat seberapa terbuka jejak digital lo sendiri.",
+    teks: "Seberapa kebuka jejak digital lo sendiri.",
   },
   {
     href: "/periksa",
     judul: "Cek sebelum transfer",
-    teks: "Periksa rekening, toko, atau orang sebelum uang berpindah.",
+    teks: "Cek rekening, toko, atau orangnya sebelum duit pindah.",
   },
   {
     href: "/periksa",
     judul: "Bantu orang terdekat",
-    teks: "Bantu memeriksa sesuatu untuk keluarga atau teman.",
+    teks: "Bantuin ngecek sesuatu buat keluarga atau teman.",
   },
 ] as const;
 
@@ -54,8 +54,8 @@ export default async function BerandaPage() {
           Kasus lo
         </h2>
         <p className="kosong">
-          Belum ada kasus yang jalan. Begitu lo mulai memeriksa sesuatu, hasilnya bisa disimpan jadi
-          kasus supaya buktinya nggak tercecer.
+          Belum ada kasus yang jalan. Begitu lo mulai meriksa sesuatu, hasilnya bisa disimpen jadi
+          kasus biar buktinya nggak tercecer.
         </p>
       </section>
     </div>

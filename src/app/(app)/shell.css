@@ -8,9 +8,9 @@
 .shell {
   display: grid;
   height: 100dvh;
-  background:
-    radial-gradient(circle at 50% -10%, rgba(215, 184, 116, 0.07), transparent 42%),
-    linear-gradient(160deg, var(--obsidian-naik) 0%, var(--obsidian) 62%);
+  position: relative;
+  isolation: isolate;
+  background: var(--canvas);
   grid-template-areas:
     "atas"
     "workspace"
@@ -28,7 +28,7 @@
   height: calc(var(--tinggi-topbar) + var(--aman-atas));
   padding: var(--aman-atas) calc(var(--r4) + var(--aman-kanan)) 0 calc(var(--r4) + var(--aman-kiri));
   border-bottom: 1px solid var(--garis);
-  background: linear-gradient(180deg, rgba(20, 23, 27, 0.86), rgba(13, 15, 18, 0.7));
+  background: linear-gradient(180deg, rgba(11, 23, 29, 0.82), rgba(6, 16, 21, 0.62));
   grid-area: atas;
   backdrop-filter: blur(18px);
 }
@@ -86,7 +86,7 @@
 }
 
 .kontrol[data-sibuk="ya"] {
-  color: var(--amber);
+  color: var(--aksen);
 }
 
 /* ---------------- Rail desktop ---------------- */
@@ -112,7 +112,7 @@
   height: calc(var(--tinggi-nav) + var(--aman-bawah));
   padding-bottom: var(--aman-bawah);
   border-top: 1px solid var(--garis);
-  background: linear-gradient(0deg, rgba(20, 23, 27, 0.94), rgba(13, 15, 18, 0.76));
+  background: linear-gradient(0deg, rgba(11, 23, 29, 0.92), rgba(6, 16, 21, 0.72));
   grid-area: bawah;
   grid-auto-flow: column;
   backdrop-filter: blur(18px);
@@ -149,9 +149,9 @@
   width: 26px;
   height: 2px;
   border-radius: var(--lengkung-penuh);
-  background: var(--amber);
+  background: var(--aksen);
   content: "";
-  box-shadow: 0 0 12px rgba(215, 184, 116, 0.6);
+  box-shadow: var(--pendar-aksen);
 }
 
 /* ---------------- Mata Jejak ---------------- */
@@ -165,11 +165,11 @@
   place-items: center;
   width: 46px;
   height: 46px;
-  border: 1px solid var(--garis-terang);
+  padding: 6px;
+  border: 1px solid var(--aksen-kuat);
   border-radius: 50%;
-  color: var(--amber);
-  background: linear-gradient(150deg, var(--charcoal-naik), var(--charcoal));
-  box-shadow: var(--angkat), var(--kilau-dalam);
+  background: radial-gradient(circle at 38% 32%, rgba(82, 215, 255, 0.2), rgba(11, 23, 29, 0.92));
+  box-shadow: var(--angkat), var(--pendar-aksen), var(--kilau-dalam);
   transition: transform var(--mikro) var(--lengkung-gerak);
 }
 
@@ -191,7 +191,7 @@
 .panel-tirai {
   position: absolute;
   inset: 0;
-  background: rgba(4, 5, 6, 0.62);
+  background: rgba(3, 10, 14, 0.66);
   cursor: default;
 }
 
@@ -264,7 +264,7 @@
     padding: calc(var(--r5) + var(--aman-atas)) var(--r3) var(--r5)
       calc(var(--r3) + var(--aman-kiri));
     border-right: 1px solid var(--garis);
-    background: rgba(13, 15, 18, 0.6);
+    background: rgba(11, 23, 29, 0.55);
   }
 
   .nav-item {
@@ -291,7 +291,7 @@
 
   .nav-item[aria-current="page"] {
     color: var(--ivory);
-    background: var(--amber-lembut);
+    background: var(--aksen-lembut);
     box-shadow: var(--kilau-dalam);
   }
 
@@ -301,7 +301,7 @@
     width: 2px;
     height: 20px;
     border-radius: var(--lengkung-penuh);
-    background: var(--amber);
+    background: var(--aksen);
     content: "";
   }
 
@@ -409,7 +409,7 @@
 
 .mata-kicker {
   margin: 0 0 var(--r2);
-  color: var(--amber);
+  color: var(--aksen);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -455,13 +455,40 @@
   padding: var(--r2) var(--r2) var(--r2) var(--r5);
   border: 1px solid var(--garis-terang);
   border-radius: var(--lengkung-penuh);
-  background: linear-gradient(150deg, var(--charcoal-naik), rgba(20, 23, 27, 0.75));
-  box-shadow: var(--angkat), var(--kilau-dalam);
-  transition: border-color var(--panel) var(--lengkung-gerak);
+  background: linear-gradient(150deg, rgba(16, 32, 41, 0.95), rgba(11, 23, 29, 0.82));
+  box-shadow:
+    var(--angkat),
+    var(--kilau-dalam),
+    inset 0 0 32px rgba(82, 215, 255, 0.06);
+  transition:
+    border-color var(--panel) var(--lengkung-gerak),
+    box-shadow var(--panel) var(--lengkung-gerak);
+}
+
+/* Cincin cahaya menyala saat konsol dipakai — inilah tanda ia objek utama. */
+.konsol-cincin::before {
+  position: absolute;
+  z-index: -1;
+  border-radius: inherit;
+  content: "";
+  inset: -1px;
+  background: linear-gradient(140deg, var(--brand-cyan), var(--aurora-mint), var(--violet-accent));
+  opacity: 0;
+  filter: blur(14px);
+  transition: opacity var(--panel) var(--lengkung-gerak);
 }
 
 .konsol-cincin:focus-within {
-  border-color: rgba(215, 184, 116, 0.5);
+  border-color: var(--aksen-kuat);
+}
+
+.konsol-cincin:focus-within::before {
+  opacity: 0.55;
+}
+
+/* Konsol yang sudah mengenali isinya memberi sinyal tanpa perlu tulisan besar. */
+.konsol-cincin[data-terdeteksi="ya"] {
+  border-color: rgba(101, 240, 197, 0.4);
 }
 
 .konsol-input {
@@ -485,8 +512,13 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  color: var(--obsidian);
-  background: linear-gradient(150deg, #e3c887, var(--amber));
+  color: #04222c;
+  background: linear-gradient(
+    150deg,
+    var(--ice-highlight),
+    var(--brand-cyan) 60%,
+    var(--aurora-mint)
+  );
   transition:
     transform var(--mikro) var(--lengkung-gerak),
     opacity var(--mikro) var(--lengkung-gerak);
@@ -510,7 +542,7 @@
 }
 
 .konsol-tanda {
-  color: var(--amber);
+  color: var(--aurora-mint);
   font-weight: 650;
 }
 
@@ -581,7 +613,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--amber);
+  background: var(--aksen);
   content: "";
 }
 
@@ -702,7 +734,7 @@
 }
 
 .isian:focus {
-  border-color: rgba(215, 184, 116, 0.5);
+  border-color: var(--aksen-kuat);
   outline: none;
 }
 
@@ -731,7 +763,7 @@ select.isian {
   width: 20px;
   height: 20px;
   margin-top: 2px;
-  accent-color: var(--amber);
+  accent-color: var(--aksen);
 }
 
 .form-bantuan {
@@ -759,11 +791,17 @@ select.isian {
   align-self: flex-start;
   min-height: 48px;
   padding: 0 var(--r5);
-  border: 1px solid rgba(215, 184, 116, 0.34);
+  border: 1px solid var(--aksen-kuat);
   border-radius: var(--lengkung-penuh);
-  color: #f7efdc;
-  background: linear-gradient(160deg, rgba(215, 184, 116, 0.26), rgba(215, 184, 116, 0.1));
-  font-weight: 650;
+  color: #04222c;
+  background: linear-gradient(
+    150deg,
+    var(--ice-highlight),
+    var(--brand-cyan) 55%,
+    var(--aurora-mint)
+  );
+  box-shadow: var(--pendar-aksen);
+  font-weight: 680;
   text-decoration: none;
   transition:
     transform var(--mikro) var(--lengkung-gerak),
