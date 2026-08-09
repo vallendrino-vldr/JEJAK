@@ -1,20 +1,53 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { LABEL_TUJUAN, daftarKasus } from "@/lib/kasus/baca";
 
 export const metadata: Metadata = { title: "Kasus" };
 
-export default function KasusPage() {
+const formatTanggal = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" });
+
+export default async function KasusPage() {
+  const kasus = await daftarKasus();
+
   return (
     <div className="ruang">
       <section className="hero hero-rapat">
         <p className="mata-kicker">Kasus</p>
         <h1 className="hero-judul">Tempat bukti lo dikumpulkan.</h1>
         <p className="hero-teks">
-          Satu kasus menyatukan identifier, bukti, hubungan antar temuan, dan catatan lo dalam satu
-          berkas yang bisa dibuka lagi kapan pun.
+          Satu kasus menyatukan identifier, bukti, dan catatan lo dalam satu berkas yang bisa dibuka
+          lagi kapan pun.
+        </p>
+        <p className="hero-aksi">
+          <Link href="/kasus/baru" className="tombol-utama">
+            Buat kasus
+          </Link>
         </p>
       </section>
 
-      <p className="kosong">Belum ada kasus.</p>
+      {kasus.length === 0 ? (
+        <p className="kosong">
+          Belum ada kasus. Mulai satu begitu ada sesuatu yang mau lo telusuri lebih serius.
+        </p>
+      ) : (
+        <ul className="daftar-kartu">
+          {kasus.map((satu) => (
+            <li key={satu.id}>
+              <Link href={`/kasus/${satu.id}`} className="kartu">
+                <span className="kartu-meta">
+                  {satu.publicRef} · {LABEL_TUJUAN[satu.purpose] ?? satu.purpose}
+                  {satu.isSecret ? " · Rahasia" : ""}
+                </span>
+                <span className="kartu-judul">{satu.isSecret ? "Kasus rahasia" : satu.title}</span>
+                <span className="kartu-teks">
+                  {satu.jumlahPetunjuk} petunjuk · terakhir{" "}
+                  {formatTanggal.format(new Date(satu.lastActivityAt))}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
