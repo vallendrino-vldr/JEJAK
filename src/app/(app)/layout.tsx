@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/shell/app-shell";
 import { bacaSesiPengguna } from "@/lib/auth/session";
+import { bacaDompetPengguna } from "@/lib/ledger/service";
 import "./shell.css";
 
 /**
@@ -17,7 +18,12 @@ export default async function LayoutAplikasi({ children }: { children: ReactNode
     redirect("/masuk");
   }
 
+  const dompet = await bacaDompetPengguna();
   const namaTampilan = sesi.displayName?.split(" ")[0] ?? sesi.email.split("@")[0];
 
-  return <AppShell sesi={{ namaTampilan, peran: sesi.roleCodes }}>{children}</AppShell>;
+  return (
+    <AppShell sesi={{ namaTampilan, peran: sesi.roleCodes }} dompet={dompet}>
+      {children}
+    </AppShell>
+  );
 }

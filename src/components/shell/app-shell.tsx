@@ -19,6 +19,8 @@ import { Aurora } from "@/components/aurora";
 import { MataJejak } from "@/components/mata-jejak";
 import { Wordmark } from "@/components/merek";
 
+import type { DompetInfo } from "@/lib/ledger/service";
+
 export type RingkasanSesi = {
   namaTampilan: string;
   peran: string[];
@@ -40,7 +42,15 @@ type PanelAktif = "dompet" | "kabar" | "mata" | null;
  * isi workspace. Navigasi, kontrol global, dan state panel tidak ikut dimuat
  * ulang — itulah yang membuat perpindahan tab terasa instan tanpa spinner.
  */
-export function AppShell({ sesi, children }: { sesi: RingkasanSesi; children: ReactNode }) {
+export function AppShell({
+  sesi,
+  dompet,
+  children,
+}: {
+  sesi: RingkasanSesi;
+  dompet: DompetInfo | null;
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [panel, setPanel] = useState<PanelAktif>(null);
@@ -175,7 +185,7 @@ export function AppShell({ sesi, children }: { sesi: RingkasanSesi; children: Re
 
       {panel ? (
         <Panel judul={JUDUL_PANEL[panel]} onTutup={() => setPanel(null)}>
-          {panel === "dompet" ? <IsiDompet /> : null}
+          {panel === "dompet" ? <IsiDompet dompet={dompet} /> : null}
           {panel === "kabar" ? <IsiKabar /> : null}
           {panel === "mata" ? <IsiMata namaTampilan={sesi.namaTampilan} /> : null}
         </Panel>
@@ -219,13 +229,47 @@ function Panel({
   );
 }
 
-function IsiDompet() {
+function IsiDompet({ dompet }: { dompet: DompetInfo | null }) {
+  if (!dompet) {
+    return (
+      <>
+        <p className="panel-utama">Dompet lo belum aktif.</p>
+        <p className="panel-teks">
+          Kredit, riwayat pemakaian, dan isi ulang mulai jalan setelah mesin pemeriksaan siap.
+          Sampai saat itu nggak ada saldo yang perlu lo urus, dan nggak ada yang bisa kepotong.
+        </p>
+      </>
+    );
+  }
+
   return (
     <>
-      <p className="panel-utama">Dompet lo belum aktif.</p>
+      <div className="dompet-ringkasan" style={{ marginBottom: "1.5rem" }}>
+        <p className="panel-teks" style={{ fontSize: "0.875rem", color: "var(--fg-muted)" }}>
+          Saldo Tersedia
+        </p>
+        <p
+          style={{
+            fontSize: "2rem",
+            fontWeight: 600,
+            margin: "0.25rem 0",
+            color: "var(--fg-base)",
+          }}
+        >
+          {dompet.tersedia}{" "}
+          <span style={{ fontSize: "1rem", fontWeight: 400, color: "var(--fg-muted)" }}>
+            kredit
+          </span>
+        </p>
+        {dompet.dicadangkan > 0 && (
+          <p className="panel-teks" style={{ fontSize: "0.875rem", color: "var(--fg-warning)" }}>
+            + {dompet.dicadangkan} kredit sedang ditahan untuk proses scan aktif
+          </p>
+        )}
+      </div>
       <p className="panel-teks">
-        Kredit, riwayat pemakaian, dan isi ulang mulai jalan setelah mesin pemeriksaan siap. Sampai
-        saat itu nggak ada saldo yang perlu lo urus, dan nggak ada yang bisa kepotong.
+        Kredit ini digunakan untuk melakukan pemeriksaan mendalam. Riwayat transaksi lengkap bisa
+        dilihat lewat Pengaturan Akun di masa depan.
       </p>
     </>
   );
