@@ -36,7 +36,7 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 **Current Phase:** `PHASE 2 — Supabase + Auth + Identity`  
 **Current Milestone:** `Aktifkan Google provider, lalu uji login end-to-end`  
 **Current Branch:** `main`  
-**Latest Commit:** lihat `git log -1` — checkpoint terakhir: permission catalog + bucket privat  
+**Latest Commit:** `b669fd7` — feat(rbac): permission catalog, role mapping, and private storage buckets  
 **Latest Deploy:** `BELUM ADA` (Vercel belum di-link)  
 **Database Migration Head:** `20260809165522_permissions_and_storage_security`  
 **App Version:** `0.1.0`  
