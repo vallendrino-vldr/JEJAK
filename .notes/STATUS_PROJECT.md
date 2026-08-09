@@ -32,13 +32,13 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 
 **Project:** Jejak  
 **Domain target:** `jejak.my.id`  
-**Status besar:** Phase 0 dan Phase 1 lulus exit gate. Runtime foundation hidup, quality gate hijau, belum ada Supabase/Auth.  
+**Status besar:** Phase 0-1 lulus exit gate. Phase 2 hampir selesai: schema identity + RLS sudah live dan terbukti menolak tamu, kode OAuth sudah lengkap, tinggal provider Google diaktifkan.  
 **Current Phase:** `PHASE 2 — Supabase + Auth + Identity`  
-**Current Milestone:** `Koneksi Supabase + migration awal + Google OAuth SSR`  
+**Current Milestone:** `Aktifkan Google provider, lalu uji login end-to-end`  
 **Current Branch:** `main`  
-**Latest Commit:** `0465989` — feat(bootstrap): phase 0-1 foundation, quality gate, and secret scanner  
+**Latest Commit:** `ad1b0ab` — feat(auth): identity schema with deny-by-default RLS and Google OAuth SSR  
 **Latest Deploy:** `BELUM ADA` (Vercel belum di-link)  
-**Database Migration Head:** `NONE` (belum ada migration)  
+**Database Migration Head:** `20260809164435_expose_role_catalog_read`  
 **App Version:** `0.1.0`  
 **Environment:** `.env.local` terisi lengkap (Supabase URL/publishable/secret/JWKS, 4 Gemini, 4 Groq), file ignored  
 **Production Status:** `BELUM PRODUCTION`  
@@ -185,11 +185,17 @@ Jangan minta Product Owner mengulang keputusan berikut.
 - [x] CI GitHub Actions `Quality Gate` (format, secret scan, lint, typecheck, test, build, audit)
 - [x] `vercel.json` region `sin1` (Singapore)
 - [x] Checkpoint commit pertama `0465989`
+- [x] Supabase CLI (devDependency) tersambung ke project lewat session pooler; koneksi terbukti
+- [x] Migration `profiles` + `roles` + `user_roles`, RLS menyala di ketiganya
+- [x] Trigger inisialisasi user baru (profile + peran dasar, idempotent) + bootstrap Owner sekali pakai
+- [x] Supabase SSR client: browser, server, proxy — semuanya pakai kunci publishable lewat RLS
+- [x] Alur Google OAuth di sisi aplikasi: start, callback PKCE, keluar, halaman `/masuk` dan `/beranda`
+- [x] Test negatif RLS terhadap database sungguhan: tamu tidak bisa baca/insert/escalate
 
 ## Belum Dimulai / Belum Diverifikasi
-- [ ] Supabase runtime connection
-- [ ] Google OAuth
-- [ ] Database migrations
+- [ ] Google provider di Supabase (lihat Blocker) — login end-to-end belum bisa diuji
+- [ ] Wallet/kredit awal saat user baru (dijadwalkan Phase 6, initializer server)
+- [ ] Permissions + role_permissions (Phase 3)
 - [ ] RLS implementation
 - [ ] Storage policies
 - [ ] App Shell
@@ -254,30 +260,61 @@ Urutan terdekat:
 
 ## Next Safe Action Saat Ini
 
-**Sambungkan Supabase dan buat migration identity pertama.**
+**Tutup Phase 2: aktifkan Google provider, lalu buktikan login end-to-end.**
 
 Konkret:
 
-1. verifikasi project Supabase aktif memakai `SUPABASE_SECRET_KEY` dari server-side (jangan pernah dari client);
-2. buat folder `supabase/migrations/` dan migration pertama untuk tabel identity/profile sesuai `docs/SCHEMA.md`, dengan RLS `enable` + deny-by-default sejak migration pertama (jangan tunda ke Phase 3);
-3. tambahkan Supabase SSR client di `src/lib/supabase/` — pemisahan tegas browser client (publishable) dan server client (secret, `server-only`);
-4. implement route Google OAuth: sign-in, callback, sign-out, memakai pola SSR/PKCE resmi Supabase versi saat ini;
-5. bootstrap role Owner untuk `vadlyvldr@gmail.com` sebagai row di DB, bukan `if email === owner` di kode;
-6. tulis test: session kosong tidak bisa baca profile orang lain (negative test dasar);
-7. jalankan `pnpm check`, update `Migration Head` + Quality Gates di file ini, commit checkpoint.
+1. begitu Product Owner memberi Google OAuth Client ID + Client Secret, aktifkan provider Google di Supabase Auth project `tauyicvfhpfnohhgccvn`;
+2. daftarkan redirect URI `https://tauyicvfhpfnohhgccvn.supabase.co/auth/v1/callback` di Google Cloud, dan `http://localhost:3000/auth/callback` sebagai Additional Redirect URL di Supabase;
+3. jalankan `pnpm dev`, login lewat `/masuk`, pastikan: profile terbuat otomatis, peran `user` terpasang, dan akun `vadlyvldr@gmail.com` mendapat peran `owner` sekali saja;
+4. login kedua kali tidak boleh menggandakan profile/peran (trigger idempotent — buktikan, jangan asumsikan);
+5. tambahkan test: user A tidak bisa membaca profile user B (butuh dua akun test, jalankan setelah login hidup);
+6. update Quality Gates `Google Auth`, `Session`, `RLS` di file ini, lalu commit.
+
+Kalau credential Google belum datang, **jangan menganggur**: lanjut Phase 3
+(permissions, role_permissions, helper `current_user_has_permission`, RLS
+Storage) karena tidak bergantung pada login yang sudah hidup.
+
+### Cara menyambung ke database
+
+Host langsung `db.<ref>.supabase.co` hanya punya AAAA (IPv6) dan tidak
+resolve dari mesin ini. Pakai session pooler:
+
+```text
+postgresql://postgres.tauyicvfhpfnohhgccvn:<password>@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
+```
+
+Password ada di `JEJAK.md` (`Password Database`), harus di-percent-encode.
+Perintah: `pnpm exec supabase db push --db-url <url> --yes`.
+Jangan pernah mencetak URL berisi password ke output.
 
 ### Relevant Files
-- `docs/ROADMAP.md` Phase 2
-- `docs/SCHEMA.md` bagian auth/identity/RLS
-- `docs/ENVIRONMENT_CONTRACT.md`
-- `src/lib/env/server.ts`, `src/lib/env/client.ts`
-- `supabase/migrations/` (belum ada, akan dibuat)
+- `supabase/migrations/20260809163905_identity_and_rbac_foundation.sql`
+- `supabase/migrations/20260809164435_expose_role_catalog_read.sql`
+- `src/lib/supabase/{client,server,middleware}.ts`, `src/proxy.ts`
+- `src/lib/auth/{actions,session}.ts`
+- `src/app/masuk/page.tsx`, `src/app/beranda/page.tsx`, `src/app/auth/callback/route.ts`
+- `tests/rls-negative.test.ts`
+- `docs/ROADMAP.md` Phase 2-3, `docs/SCHEMA.md` §4-5, §68, §123-127
 
 ---
 
 # 8. BLOCKER
 
-**Current blocker:** `TIDAK ADA`
+**Current blocker:** `GOOGLE OAUTH CREDENTIAL` — butuh Product Owner
+
+Yang gue butuh: Google OAuth **Client ID** + **Client Secret** dari Google Cloud
+Console untuk project Jejak.
+
+Kenapa: provider auth yang aktif di Supabase saat ini baru `email`. Bikin OAuth
+client dan menyetujui consent screen hanya bisa dilakukan pemilik akun Google.
+
+Yang sudah gue kerjakan tanpa itu: seluruh sisi aplikasi dan database untuk login
+Google sudah jadi dan lulus quality gate. Begitu credential masuk, tinggal
+diaktifkan lalu diuji.
+
+Yang tetap gue lanjut: Phase 3 (permissions, role_permissions, RLS Storage) tidak
+bergantung pada login yang sudah hidup.
 
 Yang sudah terverifikasi:
 - credential lengkap di `.env.local` (belum diuji ke Supabase runtime);
@@ -382,15 +419,16 @@ Perintah gate lengkap: `pnpm check`
 # 13. SUPABASE STATUS
 
 ```text
-Project metadata: tersedia via local bootstrap
-Region: Singapore target
-Connection: BELUM DIVERIFIKASI
-CLI link: BELUM DIVERIFIKASI
-Migration head: BELUM ADA / BELUM DIVERIFIKASI
-RLS: NOT_IMPLEMENTED
-Storage: NOT_IMPLEMENTED
-Google Auth: NOT_IMPLEMENTED
-Owner bootstrap: NOT_IMPLEMENTED
+Project ref: tauyicvfhpfnohhgccvn
+Region: ap-southeast-1 (Singapore) — sesuai target
+Connection: PASS lewat session pooler aws-0-ap-southeast-1 (host langsung IPv6-only, tidak dipakai)
+CLI: supabase 2.113.0 sebagai devDependency; belum `link` (butuh personal access token)
+MCP Supabase: TIDAK punya akses ke project ini
+Migration head: 20260809164435_expose_role_catalog_read
+RLS: IMPLEMENTED untuk profiles/roles/user_roles
+Storage: NOT_IMPLEMENTED (Phase 3)
+Google Auth: provider belum aktif — auth provider yang menyala baru `email`
+Owner bootstrap: IMPLEMENTED di trigger, belum pernah terpicu karena belum ada login
 ```
 
 ### Jangan simpan secret di file ini.
@@ -412,10 +450,10 @@ Environment variables: BELUM DIVERIFIKASI
 # 15. GOOGLE AUTH STATUS
 
 ```text
-OAuth provider configured: BELUM DIVERIFIKASI
-Production redirect: BELUM DIVERIFIKASI
-PKCE/session flow: NOT_IMPLEMENTED
-Owner role bootstrap: NOT_IMPLEMENTED
+OAuth provider configured: BELUM — provider aktif baru `email`
+Production redirect: BELUM didaftarkan
+PKCE/session flow: IMPLEMENTED di aplikasi, belum pernah dijalankan
+Owner role bootstrap: IMPLEMENTED (trigger, sekali pakai, tidak bisa direbut akun lain)
 ```
 
 ---
@@ -435,7 +473,11 @@ Legend:
 | Production Build | PASS | 2026-08-09 | `next build` 3 route |
 | Typecheck | PASS | 2026-08-09 | strict |
 | Lint | PASS | 2026-08-09 | `--max-warnings=0` |
-| Unit Tests | PASS | 2026-08-09 | 16 test |
+| Unit Tests | PASS | 2026-08-09 | 21 test |
+| RLS (tamu ditolak) | PASS | 2026-08-09 | `tests/rls-negative.test.ts` lawan DB sungguhan |
+| RLS (user A vs user B) | NOT_RUN | - | Butuh dua akun test, menunggu login hidup |
+| Google Auth | NOT_RUN | - | Provider belum aktif |
+| Session | NOT_RUN | - | Menunggu login hidup |
 | Format | PASS | 2026-08-09 | prettier check |
 | Dependency Audit | PASS | 2026-08-09 | prod, level high |
 | Google Auth | NOT_RUN | - | |
@@ -541,12 +583,14 @@ Cukup summary per suite + failing IDs.
 
 # 19. KNOWN ISSUES
 
-- Supabase runtime connection belum pernah diuji dari kode (credential ada, koneksi belum dibuktikan).
-- Google OAuth belum dikonfigurasi; redirect URI production belum didaftarkan.
+- Google provider belum aktif di Supabase, jadi login end-to-end belum pernah dijalankan sekali pun.
+- MCP Supabase yang tersedia di session **tidak** punya akses ke project Jejak (`tauyicvfhpfnohhgccvn`); hanya melihat project lain. Semua kerja DB lewat Supabase CLI + connection string.
+- `supabase db advisors` dan `supabase link` butuh personal access token yang belum ada, jadi security advisor Supabase belum pernah dijalankan.
+- Docker tidak terpasang, jadi stack Supabase lokal dan `db diff` tidak tersedia. Migration ditulis tangan lalu di-push ke remote.
 - Vercel project belum di-link, jadi region `sin1` di `vercel.json` belum terbukti berlaku.
 - CI Quality Gate belum pernah jalan di GitHub (baru ada setelah push pertama).
 - Real Safari QA belum dilakukan — `NOT_AVAILABLE`, bukan PASS.
-- `getClientEnv`/`getServerEnv` sudah ada tapi belum dipakai halaman mana pun, jadi env validation belum terbukti di jalur runtime nyata.
+- `getServerEnv` belum dipakai jalur runtime mana pun; validasi env server belum terbukti di produksi.
 
 Agent:
 > hapus issue yang sudah benar-benar resolved dari current list.
@@ -806,13 +850,15 @@ Provider burn/rate control: NOT_RUN
 # 33. MIGRATION STATUS
 
 ```text
-Migration strategy: defined in SCHEMA
-Migration files: NONE (folder supabase/migrations belum dibuat)
-Migration head: NONE
-Fresh DB apply: NOT_RUN
-Existing DB apply: NOT_RUN
-RLS policies: NOT_IMPLEMENTED
-Seed data: NOT_IMPLEMENTED
+Migration strategy: imperative, ditulis tangan di supabase/migrations
+Migration files:
+  20260809163905_identity_and_rbac_foundation.sql
+  20260809164435_expose_role_catalog_read.sql
+Migration head: 20260809164435_expose_role_catalog_read
+Fresh DB apply: NOT_RUN (butuh Docker untuk stack lokal)
+Existing DB apply: PASS (remote, 2026-08-09)
+RLS policies: profiles 2, user_roles 1, roles 1 — RLS aktif di ketiganya
+Seed data: 5 peran sistem (owner/admin/finance/support/user)
 ```
 
 Setelah Agent membuat migration:
@@ -873,10 +919,10 @@ Saat ini:
 
 ```text
 Blueprint documents: VERIFIED READY
-Implementation: VERIFIED sampai Phase 1 (pnpm check hijau, 2026-08-09)
+Implementation: VERIFIED sampai Phase 2 minus login (pnpm check hijau, 2026-08-09)
 Secret safety: VERIFIED (ignore + scan + client bundle)
-Git: VERIFIED (repo terisolasi, remote benar, commit 0465989)
-Supabase runtime: NOT VERIFIED
+Git: VERIFIED (repo terisolasi, remote benar, commit ad1b0ab)
+Supabase runtime: VERIFIED untuk DB (migration + RLS negatif); auth BELUM
 Vercel runtime: NOT VERIFIED
 ```
 
@@ -1257,6 +1303,6 @@ Implement RDAP adapter normalization and run AT-SRC-001/002.
 
 Untuk Agent Coding berikutnya:
 
-> **Phase 0 dan Phase 1 sudah beres dan terbukti (`pnpm check` hijau di commit `0465989`). Jangan init ulang project, jangan bikin app baru di subfolder, jangan ganti package manager. Lo mulai dari Phase 2: Supabase + Auth + Identity. Baca Next Safe Action di bagian 7, lalu langsung kerja.**
+> **Phase 0-1 beres. Phase 2 tinggal satu langkah: provider Google diaktifkan. Schema identity + RLS sudah live dan sudah dites menolak tamu; seluruh kode OAuth sudah jadi. Jangan init ulang project, jangan bikin app baru di subfolder, jangan ganti package manager, jangan tulis ulang migration yang sudah dipush. Kalau credential Google belum ada, kerjakan Phase 3. Baca Next Safe Action di bagian 7, lalu langsung kerja.**
 
 **END OF STATUS PROJECT**

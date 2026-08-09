@@ -2710,6 +2710,136 @@ Melengkapi DEC-0095 (belum dikunci) untuk bagian testing saja.
 
 ---
 
+## DEC-0102 — Migration dijalankan lewat Supabase CLI + session pooler
+
+**Status:** AKTIF  
+**Phase:** 2  
+**Tanggal:** 2026-08-09
+
+### Masalah
+Tiga jalur ke database ternyata tertutup: MCP Supabase pada session ini tidak punya izin ke project Jejak (`tauyicvfhpfnohhgccvn`) dan hanya melihat project lain; `supabase link` butuh personal access token yang belum ada; host langsung `db.<ref>.supabase.co` hanya punya record AAAA sehingga tidak resolve dari mesin ini.
+
+### Keputusan
+Supabase CLI dipasang sebagai devDependency dan migration didorong dengan `supabase db push --db-url` melalui session pooler `aws-0-ap-southeast-1.pooler.supabase.com:5432`, memakai password database dari `JEJAK.md` yang di-percent-encode saat itu juga.
+
+### Alasan
+Jalur ini bekerja tanpa token tambahan, tetap menghasilkan file migration yang ter-version di repo, dan port 5432 adalah mode session yang memang cocok untuk DDL.
+
+### Dampak
+Migration head ada di `supabase/migrations`, bukan di dashboard. `supabase db advisors`, `db diff`, dan stack lokal belum tersedia (butuh token dan Docker) — jadi review keamanan schema masih manual sampai salah satunya ada. Connection string berisi password tidak boleh dicetak ke output mana pun.
+
+### Blueprint terkait
+`supabase/migrations/`, `.notes/STATUS_PROJECT.md` §13
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0103 — Owner di-bootstrap sekali oleh trigger, lalu pintunya tertutup
+
+**Status:** AKTIF  
+**Phase:** 2  
+**Tanggal:** 2026-08-09
+
+### Masalah
+Owner pertama harus ada tanpa campur tangan manual, tapi mencocokkan email di aplikasi dilarang, dan aturan "email yang cocok dapat peran owner" kalau dibiarkan hidup akan jadi jalur pengambilalihan.
+
+### Keputusan
+Trigger `app.handle_new_auth_user` memberi peran `owner` hanya jika email pendaftar sama dengan email bootstrap **dan** belum ada satu pun assignment `owner` yang aktif di database. Setelah Owner pertama ada, cabang itu tidak akan pernah aktif lagi.
+
+### Alasan
+Email tetap sebatas identity bootstrap seperti mandat blueprint; sumber kebenaran otorisasi pindah ke `user_roles` sejak detik pertama.
+
+### Dampak
+Perpindahan kepemilikan berikutnya harus lewat operasi admin yang teraudit. Kalau database di-reset, bootstrap akan berjalan lagi — itu memang perilaku yang diinginkan untuk lingkungan baru.
+
+### Blueprint terkait
+`docs/SCHEMA.md` §4.2, `supabase/migrations/20260809163905_identity_and_rbac_foundation.sql`
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0104 — Peran dibaca dari database, bukan dari klaim JWT
+
+**Status:** AKTIF  
+**Phase:** 2  
+**Tanggal:** 2026-08-09
+
+### Masalah
+Menaruh peran di klaim JWT lebih murah, tapi klaim baru segar setelah token di-refresh. Artinya pencabutan peran bisa tertunda sampai token lama kedaluwarsa.
+
+### Keputusan
+`bacaSesiPengguna()` mengambil peran dari tabel `user_roles` pada setiap request server. Klaim JWT hanya dipakai proxy untuk memutuskan apakah seseorang sudah login.
+
+### Alasan
+Pencabutan peran harus berlaku seketika. Ini juga sejalan dengan `docs/SCHEMA.md` §5.5 yang menyebut klaim custom sekadar petunjuk performa.
+
+### Dampak
+Ada satu query tambahan per request yang butuh peran. Kalau nanti terbukti mahal, jalan keluarnya cache berumur pendek di sisi server, bukan memindahkan otoritas ke JWT.
+
+### Blueprint terkait
+`docs/SCHEMA.md` §5.5, §125; `src/lib/auth/session.ts`
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0105 — Katalog peran boleh dibaca, kepemilikan peran tidak
+
+**Status:** AKTIF  
+**Phase:** 2  
+**Tanggal:** 2026-08-09
+
+### Masalah
+Aplikasi perlu menampilkan peran pengguna lewat relasi `user_roles -> roles`, sementara `roles` awalnya ditutup rapat sehingga relasinya gagal.
+
+### Keputusan
+`public.roles` diberi hak baca untuk pengguna yang sudah login dengan policy `using (true)`. `public.user_roles` tetap hanya menampilkan baris milik pemanggil.
+
+### Alasan
+Isi `roles` cuma nama peran yang sudah tertulis terbuka di blueprint. Yang benar-benar sensitif adalah siapa memegang peran apa, dan itu tidak ikut terbuka.
+
+### Dampak
+Jangan pernah menyimpan data sensitif di tabel `roles` — tabel ini sekarang terbaca semua pengguna login.
+
+### Blueprint terkait
+`supabase/migrations/20260809164435_expose_role_catalog_read.sql`, `docs/SCHEMA.md` §68
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0106 — Next.js 16: `middleware.ts` diganti `proxy.ts`
+
+**Status:** AKTIF  
+**Phase:** 1/2  
+**Tanggal:** 2026-08-09
+
+### Masalah
+Next.js 16 menandai konvensi `middleware` sebagai deprecated dan memunculkan peringatan di setiap build.
+
+### Keputusan
+File dipindahkan ke `src/proxy.ts` dengan named export `proxy`, mengikuti konvensi resmi versi ini.
+
+### Alasan
+Mengikuti konvensi yang didukung sejak awal lebih murah daripada memigrasi setelah banyak kode bergantung padanya.
+
+### Dampak
+Peran file itu tidak berubah: menyegarkan session dan mengarahkan tamu ke `/masuk`. Ia tetap lapisan kenyamanan — otorisasi sebenarnya tetap di RLS.
+
+### Blueprint terkait
+`src/proxy.ts`, `src/lib/supabase/middleware.ts`
+
+### Menggantikan
+Tidak ada
+
+---
+
 # 5. KEPUTUSAN YANG WAJIB DIBUAT SAAT IMPLEMENTASI BILA RELEVAN
 
 Saat Agent benar-benar menjalankan project, keputusan berikut belum boleh diasumsikan dan harus dicatat jika significant:
