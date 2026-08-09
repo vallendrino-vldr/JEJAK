@@ -23,7 +23,24 @@ export async function actionMulaiPemeriksaan(formData: FormData) {
   }
 
   const idempotencyKey = randomUUID(); // Sederhananya pakai random UUID. Di production client kirim nonce.
-  const targets = [{ type: jenis, displayValue: masukan }];
+
+  // Privacy audit: Mask display value & hash the real value
+  let displayValueMasked = masukan;
+  if (jenis === "email" && masukan.includes("@")) {
+    const [name, dom] = masukan.split("@");
+    displayValueMasked = `${name.slice(0, 2)}***@${dom}`;
+  } else if (jenis === "nomor_hp") {
+    displayValueMasked = masukan.slice(0, 4) + "***" + masukan.slice(-2);
+  }
+
+  // Sebaiknya pakai HMAC dengan key rahasia, untuk sekarang hash SHA-256 dasar
+  const encoder = new TextEncoder();
+  const dataBuf = encoder.encode(masukan + process.env.SUPABASE_SECRET_KEY);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuf);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const normalizedValueHmac = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
+  const targets = [{ type: jenis, displayValue: displayValueMasked, normalizedValueHmac }];
 
   const result = await mulaiScan(user.id, undefined, "quick_check", targets, idempotencyKey);
 

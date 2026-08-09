@@ -45,6 +45,20 @@ export default async function PeriksaPage({
   const masukan = typeof q === "string" ? q : "";
   const deteksi = deteksiIdentifier(masukan);
 
+  let costExact = null;
+  if (deteksi) {
+    const { createSupabaseServerClient } = await import("@/lib/supabase/server");
+    const supabase = await createSupabaseServerClient();
+    const { data: product } = await supabase
+      .from("scan_products")
+      .select("base_credit_cost")
+      .eq("code", "quick_check")
+      .single();
+    if (product) {
+      costExact = product.base_credit_cost;
+    }
+  }
+
   return (
     <div className="ruang">
       <section className="hero hero-rapat">
@@ -73,8 +87,8 @@ export default async function PeriksaPage({
           <form action={actionMulaiPemeriksaan} className="mt-8">
             <input type="hidden" name="masukan" value={masukan} />
             <input type="hidden" name="jenis" value={deteksi.jenis} />
-            <button type="submit" className="tombol tombol-utama">
-              Mulai Pemeriksaan (1 Kredit)
+            <button type="submit" className="tombol tombol-utama" disabled={costExact === null}>
+              {costExact !== null ? `Mulai Pemeriksaan (${costExact} Kredit)` : "Memuat harga..."}
             </button>
           </form>
         </section>
