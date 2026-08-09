@@ -861,3 +861,62 @@ select.isian {
   font-size: 0.92rem;
   word-break: break-all;
 }
+
+/* ---------------- Bukti ---------------- */
+
+.catatan-atas {
+  margin: 0 0 var(--r4);
+}
+
+.daftar-bukti {
+  display: grid;
+  gap: var(--r3);
+  margin: var(--r5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bukti {
+  padding: var(--r4) var(--r5);
+  border: 1px solid var(--garis);
+  border-left: 2px solid var(--titanium-redup);
+  border-radius: var(--lengkung-kecil);
+  background: var(--kaca-tipis);
+}
+
+/* Kekuatan klaim dibedakan lewat warna DAN label teks, tidak pernah warna saja. */
+.bukti[data-nada="kuat"] {
+  border-left-color: var(--aurora-mint);
+}
+
+.bukti[data-nada="sedang"] {
+  border-left-color: var(--brand-cyan);
+}
+
+.bukti[data-nada="lemah"] {
+  border-left-color: var(--violet-accent);
+}
+
+.bukti-kelas {
+  margin: 0 0 var(--r2);
+  color: var(--titanium);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.bukti-ringkasan {
+  margin: 0 0 var(--r3);
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+
+.bukti-paspor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--r2);
+  margin: 0;
+  color: var(--titanium-redup);
+  font-size: 0.76rem;
+}

@@ -59,7 +59,16 @@ for (const nama of berkas) {
   } catch (galat) {
     gagal += 1;
     const keluaran = `${galat.stdout ?? ""}${galat.stderr ?? ""}`;
-    const pesan = keluaran.match(/"message":"([^"]+)"/)?.[1] ?? "gagal tanpa pesan";
+    // Pesan Postgres memuat tanda kutip yang di-escape, jadi dibaca sebagai JSON
+    // alih-alih dipotong regex sederhana.
+    const mentah = keluaran.match(/\{"_tag":"Error".*\}/s)?.[0];
+    let pesan = "gagal tanpa pesan";
+
+    try {
+      pesan = mentah ? (JSON.parse(mentah).error?.message ?? pesan) : pesan;
+    } catch {
+      pesan = mentah ?? pesan;
+    }
     console.error(`GAGAL  ${nama}: ${pesan}`);
   }
 }
