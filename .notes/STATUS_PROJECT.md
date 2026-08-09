@@ -32,9 +32,9 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 
 **Project:** Jejak  
 **Domain produksi:** `https://www.cekjejak.my.id` (kanonik; apex `cekjejak.my.id` redirect ke sini — lihat DEC-0110)  
-**Status besar:** Phase 0-1 lulus exit gate. Phase 2 tinggal satu langkah manusia: alur login sudah hidup di produksi sampai halaman Google, tapi belum ada yang pernah menyelesaikan login.  
-**Current Phase:** `PHASE 2 — Supabase + Auth + Identity`  
-**Current Milestone:** `Login Google pertama, lalu verifikasi initializer + Owner`  
+**Status besar:** Phase 0-3 lulus. Login Google sungguhan sudah berhasil di produksi, Owner terbaca dari database, isolasi antar pengguna terbukti lewat 20 invariant RLS.  
+**Current Phase:** `PHASE 4 — App Shell + Design Foundation`  
+**Current Milestone:** `App Shell persisten + navigasi utama, menggantikan halaman placeholder`  
 **Current Branch:** `main`  
 **Latest Commit:** `0cca0dd` — fix(auth): mark Supabase cookies Secure in production  
 **Latest Deploy:** produksi `0cca0dd` di `https://www.cekjejak.my.id`, region `sin1`, auto-deploy dari push ke `main`  
@@ -272,19 +272,18 @@ Urutan terdekat:
 
 ## Next Safe Action Saat Ini
 
-**Verifikasi hasil login Google pertama, lalu tutup Phase 2.**
+**Phase 4 — App Shell + Design Foundation.**
 
-Begitu Product Owner sudah menyelesaikan login sekali (lihat Blocker):
+Ganti halaman placeholder dengan App Shell nyata: shell persisten setinggi
+viewport tanpa scroll global, navigasi utama Beranda / Periksa / Kasus /
+Jejak Gue, panel Dompet dan Kabar sebagai konteks tambahan, adaptif
+touch-first di mobile dan pointer-first di desktop. Ikuti
+`docs/DESIGN_SYSTEM.md` dan `docs/WIRE_MAP.md`; jangan bikin halaman dummy yang
+tidak tersambung ke server.
 
-1. cek di database bahwa `profiles` punya tepat satu baris untuk akun itu, dan `user_roles` punya `user` + `owner` masing-masing satu baris aktif;
-2. minta Product Owner login kedua kali, lalu pastikan jumlah baris tidak bertambah — trigger memang idempotent, tapi buktikan;
-3. buat akun uji kedua (Google mana pun), lalu tulis test bahwa akun A tidak menerima satu baris pun milik akun B untuk `profiles` dan `user_roles`;
-4. buktikan peran tidak bisa dipalsukan dari browser: akun biasa mencoba `insert`/`update` ke `user_roles` harus gagal;
-5. buktikan pencabutan berlaku di request berikutnya: cabut peran lewat SQL, lalu `/beranda` harus langsung berubah tanpa menunggu token kedaluwarsa;
-6. isi Quality Gates `Google Auth`, `Session`, `RLS (user A vs user B)` di file ini dengan hasil sungguhan, commit, push.
-
-Kalau login pertama belum juga terjadi, **jangan menganggur**: lanjut Phase 4
-(App Shell + Design Foundation) karena tidak bergantung pada sesi yang hidup.
+Setelah App Shell hidup, lanjut Phase 5 (Case + Entity + Evidence) secara
+vertikal: buat Case dari UI, simpan ke DB, dijaga RLS, tampil lagi setelah
+refresh, lalu tutup dengan test cross-user.
 
 ### Cara menyambung ke database
 
@@ -312,24 +311,10 @@ Jangan pernah mencetak URL berisi password ke output.
 
 # 8. BLOCKER
 
-**Current blocker:** `LOGIN GOOGLE PERTAMA` — butuh satu tindakan manusia
+**Current blocker:** `TIDAK ADA`
 
-Yang dibutuhkan: Product Owner membuka `https://www.cekjejak.my.id/masuk`, klik
-**Lanjut dengan Google**, pilih akun `vadlyvldr@gmail.com`, setujui consent.
-
-Kenapa cuma bisa manusia: memilih akun Google dan menyetujui consent adalah
-tindakan yang tidak boleh dilakukan agent — memasukkan kredensial akun ke form
-adalah batas yang tidak dilewati.
-
-Sudah diverifikasi sampai batas itu: rantai `/masuk` → `/auth/masuk-google` →
-Supabase authorize → halaman Sign in Google berjalan di produksi tanpa error.
-Google menerima OAuth client-nya (tidak ada `redirect_uri_mismatch`).
-
-Apa yang terjadi setelah login sudah dibuktikan lebih dulu di database lewat
-`supabase/tests/initializer-invariants.sql`: profil dibuat sekali, peran `user`
-terpasang, peran `owner` diberikan tepat sekali dan tidak bisa direbut ketika
-kepemilikan sudah dipegang, dan menghapus user membersihkan seluruh turunannya.
-Yang tersisa adalah membuktikan hal yang sama lewat jalur Google sungguhan.
+Login Google sungguhan sudah berhasil. Akun Owner terbaca `active` dengan peran
+`owner` + `user`, keduanya berasal dari database.
 
 Yang sudah terverifikasi:
 - credential lengkap di `.env.local` (belum diuji ke Supabase runtime);
@@ -530,9 +515,13 @@ Legend:
 | Cookie Secure | PASS | 2026-08-10 | code verifier: Secure + SameSite=lax |
 | OAuth sampai Google | PASS | 2026-08-10 | halaman Sign in Google tampil, tanpa redirect_uri_mismatch |
 | Initializer user baru | PASS | 2026-08-10 | `supabase/tests/initializer-invariants.sql`, database bersih lagi setelahnya |
-| Google Auth (login penuh) | NOT_RUN | - | Butuh manusia memilih akun + consent |
-| Session | NOT_RUN | - | Menunggu login pertama |
-| RLS (user A vs user B) | NOT_RUN | - | Butuh dua akun test, menunggu login hidup |
+| Google Auth (login penuh) | PASS | 2026-08-10 | Owner login sungguhan di produksi, sampai `/beranda` |
+| Session SSR | PASS | 2026-08-10 | `/beranda` merender status + peran dari DB per request |
+| Owner dari database | PASS | 2026-08-10 | 1 profil, `active`, peran `owner` + `user`; nol email check di `src/` |
+| RLS (user A vs user B) | PASS | 2026-08-10 | `supabase/tests/rls-cross-user.sql`, 20 invariant |
+| Role spoof dari browser | PASS | 2026-08-10 | insert `user_roles` dan ubah `account_status` sama-sama ditolak |
+| Pencabutan peran langsung berlaku | PASS | 2026-08-10 | dibaca dari DB, bukan klaim JWT |
+| Logout | NOT_RUN | - | Butuh sesi hidup di browser; risikonya kecil, tombolnya ada di `/beranda` |
 | Format | PASS | 2026-08-09 | prettier check |
 | Dependency Audit | PASS | 2026-08-09 | prod, level high |
 | Google Auth | NOT_RUN | - | |
