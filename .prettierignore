@@ -1,0 +1,9 @@
+.next/
+coverage/
+node_modules/
+docs/
+.notes/
+PROMPT_PEMBUKA.md
+README.md
+JEJAK.md
+pnpm-lock.yaml

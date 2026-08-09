@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Next.js / build output
+.next/
+out/
+dist/
+build/
+coverage/
+.turbo/
+
+# Local environment and credentials
+.env*
+!.env.example
+JEJAK.md
+credentials*.json
+credential*.json
+secrets.*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Deployment / tooling state
+.vercel/
+.supabase/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editors / operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
