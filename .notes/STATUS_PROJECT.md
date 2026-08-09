@@ -32,11 +32,11 @@ Jika Agent baru membaca seluruh `PRD`, `DESIGN_SYSTEM`, `WIRE_MAP`, `SCHEMA`, da
 
 **Project:** Jejak  
 **Domain produksi:** `https://www.cekjejak.my.id` (kanonik; apex `cekjejak.my.id` redirect ke sini — lihat DEC-0110)  
-**Status besar:** Phase 0-3 lulus. Login Google sungguhan sudah berhasil di produksi, Owner terbaca dari database, isolasi antar pengguna terbukti lewat 20 invariant RLS.  
-**Current Phase:** `PHASE 4 — App Shell + Design Foundation`  
-**Current Milestone:** `App Shell persisten + navigasi utama, menggantikan halaman placeholder`  
+**Status besar:** Phase 0-4 lulus. Phase 5 jalan: App Shell hidup, Kasus sudah bisa dibuat dan diisi petunjuk dari UI sampai database, identifier tersimpan terenkripsi, isolasi antar pengguna terbukti lewat tiga suite SQL.  
+**Current Phase:** `PHASE 5 — Case + Entity + Evidence Core`  
+**Current Milestone:** `Evidence Passport + relationship, di atas Kasus yang sudah hidup`  
 **Current Branch:** `main`  
-**Latest Commit:** `0cca0dd` — fix(auth): mark Supabase cookies Secure in production  
+**Latest Commit:** `edb2277` — feat(kasus): case, membership, and protected identifiers end to end  
 **Latest Deploy:** produksi `0cca0dd` di `https://www.cekjejak.my.id`, region `sin1`, auto-deploy dari push ke `main`  
 **Database Migration Head:** `20260809165522_permissions_and_storage_security`  
 **App Version:** `0.1.0`  
@@ -202,6 +202,12 @@ Jangan minta Product Owner mengulang keputusan berikut.
 - [x] Open redirect lewat `?lanjut=` ditolak di produksi (URL absolut, protocol-relative, backslash)
 - [x] `/beranda` tanpa sesi dialihkan ke `/masuk`
 - [x] Bundle klien produksi dipindai: nol secret server-only
+- [x] Login Google sungguhan berhasil; Owner terbaca `active` dengan peran `owner` + `user` dari database
+- [x] App Shell persisten: navigasi 4 tab, rail desktop, bottom nav mobile, panel Dompet/Kabar/Mata, no global scroll
+- [x] Search Console dengan deteksi jenis identifier lokal + 9 test
+- [x] Kasus: buat, daftar, buka, tambah petunjuk — UI sampai database
+- [x] Identifier disimpan terenkripsi + blind index HMAC; kunci hidup di Vault, tidak pernah keluar dari database
+- [x] Tiga suite SQL hijau: initializer, isolasi antar pengguna, isolasi Kasus
 
 ## Belum Dimulai / Belum Diverifikasi
 - [ ] Google provider di Supabase (lihat Blocker) — login end-to-end belum bisa diuji
@@ -272,18 +278,28 @@ Urutan terdekat:
 
 ## Next Safe Action Saat Ini
 
-**Phase 4 — App Shell + Design Foundation.**
+**Lanjutkan Phase 5: Evidence Passport dan relationship di atas Kasus yang sudah hidup.**
 
-Ganti halaman placeholder dengan App Shell nyata: shell persisten setinggi
-viewport tanpa scroll global, navigasi utama Beranda / Periksa / Kasus /
-Jejak Gue, panel Dompet dan Kabar sebagai konteks tambahan, adaptif
-touch-first di mobile dan pointer-first di desktop. Ikuti
-`docs/DESIGN_SYSTEM.md` dan `docs/WIRE_MAP.md`; jangan bikin halaman dummy yang
-tidak tersambung ke server.
+Konkret:
 
-Setelah App Shell hidup, lanjut Phase 5 (Case + Entity + Evidence) secara
-vertikal: buat Case dari UI, simpan ke DB, dijaga RLS, tampil lagi setelah
-refresh, lalu tutup dengan test cross-user.
+1. migration `case_evidence` sesuai `docs/SCHEMA.md` — setiap bukti wajib punya sumber, jenis, waktu, keandalan, target, dan cara verifikasi ulang; kelas bukti dipisah (fakta terverifikasi / sinyal / korelasi / inferensi AI / bukti pengguna);
+2. migration `entity_relationships` dengan status `suggested`/`accepted` — AI hanya boleh mengusulkan, manusia yang menerima, dan merge harus bisa dibatalkan;
+3. RLS keduanya ikut `app.bisa_akses_kasus`; tulis ulang pola grant per kolom, bukan grant tabel lalu revoke — pelajaran dari `20260809185658`;
+4. UI: daftar bukti di halaman Kasus, dengan label kelas bukti yang jujur — inferensi tidak boleh tampil setara fakta;
+5. tambahkan invariant ke `supabase/tests/case-isolation.sql`: bukti milik kasus orang lain tidak terbaca, dan bukti tanpa sumber ditolak;
+6. jalankan tiga suite SQL + `pnpm check`, commit, push.
+
+Setelah itu Phase 6 (Credit Ledger) — jangan mulai mesin pemeriksaan
+sebelum ledger sehat.
+
+### Cara menjalankan suite SQL
+
+```text
+pnpm exec supabase db query --db-url <connection-string> -f supabase/tests/<nama>.sql
+```
+
+Keluaran `DO` tanpa error berarti lulus. Connection string ada di bagian 7
+sebelumnya; password diambil dari `JEJAK.md` dan tidak boleh dicetak.
 
 ### Cara menyambung ke database
 
@@ -521,7 +537,10 @@ Legend:
 | RLS (user A vs user B) | PASS | 2026-08-10 | `supabase/tests/rls-cross-user.sql`, 20 invariant |
 | Role spoof dari browser | PASS | 2026-08-10 | insert `user_roles` dan ubah `account_status` sama-sama ditolak |
 | Pencabutan peran langsung berlaku | PASS | 2026-08-10 | dibaca dari DB, bukan klaim JWT |
-| Logout | NOT_RUN | - | Butuh sesi hidup di browser; risikonya kecil, tombolnya ada di `/beranda` |
+| Logout | NOT_RUN | - | Butuh sesi hidup di browser; tombolnya di Jejak Gue |
+| Isolasi Kasus | PASS | 2026-08-10 | `supabase/tests/case-isolation.sql`, 22 invariant |
+| Perlindungan identifier | PASS | 2026-08-10 | ciphertext + HMAC tertutup dari client, nilai bisa dipulihkan server |
+| App Shell | PASS | 2026-08-10 | build hijau, 4 route utama; QA browser lintas perangkat belum |
 | Format | PASS | 2026-08-09 | prettier check |
 | Dependency Audit | PASS | 2026-08-09 | prod, level high |
 | Google Auth | NOT_RUN | - | |
@@ -901,7 +920,8 @@ Migration files:
   20260809163905_identity_and_rbac_foundation.sql
   20260809164435_expose_role_catalog_read.sql
   20260809165522_permissions_and_storage_security.sql
-Migration head: 20260809165522_permissions_and_storage_security
+Migration head: 20260809185734_attribution_survives_user_deletion
+Suite SQL: supabase/tests/{initializer-invariants,rls-cross-user,case-isolation}.sql — semuanya hijau
 Fresh DB apply: NOT_RUN (butuh Docker untuk stack lokal)
 Existing DB apply: PASS (remote, 2026-08-09)
 RLS policies: profiles 2, user_roles 1, roles 1, permissions 1, role_permissions 0 — RLS aktif di semuanya

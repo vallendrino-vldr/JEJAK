@@ -3022,6 +3022,110 @@ Tidak ada
 
 ---
 
+## DEC-0114 — Kunci identifier dibangkitkan dan disimpan di dalam database
+
+**Status:** AKTIF  
+**Phase:** 5  
+**Tanggal:** 2026-08-10
+
+### Masalah
+Blueprint meminta identifier sensitif dienkripsi dan dicocokkan lewat HMAC berkunci. Menaruh kuncinya di environment Vercel berarti kunci itu ada di dashboard, ikut ter-import ke preview, dan bisa terbaca siapa pun yang punya akses proyek.
+
+### Keputusan
+Kunci HMAC dan kunci enkripsi dibangkitkan di dalam Postgres dengan `gen_random_bytes` lalu disimpan di Supabase Vault. Fungsi `app.kunci()` yang membacanya berstatus SECURITY DEFINER di schema privat dan tidak bisa dipanggil client. Enkripsi memakai pgcrypto, pencocokan memakai HMAC-SHA256 sebagai blind index.
+
+### Alasan
+Tidak ada nilai rahasia yang perlu ditulis di migration, di repositori, atau di environment mana pun. Kunci tidak pernah meninggalkan database.
+
+### Dampak
+Rotasi kunci butuh rencana dual-read plus reindex — blind index lama tidak akan cocok lagi. Backup database berisi ciphertext dan Vault; keduanya harus diperlakukan setara data sensitif. Kalau nanti perlu memindahkan enkripsi ke lapisan aplikasi, itu keputusan baru, bukan tambalan.
+
+### Blueprint terkait
+`docs/SCHEMA.md` §9.2, `supabase/migrations/20260809185213_case_entity_core.sql`
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0115 — Kasus dan petunjuk hanya lahir lewat fungsi, bukan INSERT client
+
+**Status:** AKTIF  
+**Phase:** 5  
+**Tanggal:** 2026-08-10
+
+### Masalah
+Kalau client boleh `insert` ke `cases`, sebuah kasus bisa tercipta tanpa keanggotaan owner-nya. Kalau client boleh `insert` ke `case_entities`, nilai identifier akan masuk tanpa terenkripsi.
+
+### Keputusan
+Tidak ada policy INSERT untuk client pada `cases`, `case_members`, maupun `case_entities`. Semua penambahan lewat `public.buat_kasus()` dan `public.tambah_petunjuk()` yang berstatus SECURITY DEFINER, memeriksa hak akses sendiri, dan menjaga invariantnya dalam satu transaksi.
+
+### Alasan
+Invariant yang dijaga fungsi tidak bisa dilanggar, bahkan oleh klien yang memanggil Data API langsung.
+
+### Dampak
+Setiap kemampuan menulis yang baru harus lewat fungsi juga. Menambahkan policy INSERT belakangan akan membuka kembali celah yang ditutup di sini.
+
+### Blueprint terkait
+`docs/SCHEMA.md` §8.3, `supabase/migrations/20260809185213_case_entity_core.sql`
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0116 — Pembatasan kolom memakai grant per kolom, bukan revoke setelah grant tabel
+
+**Status:** AKTIF  
+**Phase:** 3/5  
+**Tanggal:** 2026-08-10
+
+### Masalah
+`grant select on <tabel>` lalu `revoke select (kolom)` terlihat benar tetapi tidak berpengaruh di Postgres: hak tingkat tabel mencakup seluruh kolom dan tidak bisa dikurangi per kolom. Akibatnya ciphertext dan blind index identifier sempat terbaca oleh setiap pengguna yang login.
+
+### Keputusan
+Kalau ada kolom yang harus tertutup, jangan pernah memberi hak tingkat tabel. Sebutkan daftar kolom yang boleh dibaca secara eksplisit.
+
+### Alasan
+Ini kesalahan yang tidak menimbulkan error dan tidak terlihat dari kode aplikasi. Yang menemukannya adalah test, bukan pembacaan ulang.
+
+### Dampak
+Menambah kolom baru ke tabel yang dibatasi berarti harus menambahkannya ke daftar grant secara sadar — default-nya tertutup, dan itu memang yang diinginkan.
+
+### Blueprint terkait
+`supabase/migrations/20260809185658_lock_identifier_columns.sql`, `supabase/tests/case-isolation.sql`
+
+### Menggantikan
+Tidak ada
+
+---
+
+## DEC-0117 — Kolom atribusi melepas acuannya saat akun dihapus
+
+**Status:** AKTIF  
+**Phase:** 5/12  
+**Tanggal:** 2026-08-10
+
+### Masalah
+`created_by`, `assigned_by`, `invited_by`, dan `revoked_by` menunjuk ke `auth.users` tanpa aturan ON DELETE, sehingga penghapusan akun ditolak database. Itu bertabrakan dengan janji privasi Jejak.
+
+### Keputusan
+Keempatnya memakai `on delete set null`. Atribusinya hilang, datanya tetap berada di kasus pemiliknya, dan kasus itu sendiri sudah ikut terhapus lewat cascade dari pemiliknya.
+
+### Alasan
+CASCADE salah: menghapus satu kontributor tidak boleh ikut menghapus petunjuk di kasus milik orang lain. Menahan penghapusan juga salah, karena membuat janji penghapusan akun tidak bisa ditepati.
+
+### Dampak
+Jejak audit kehilangan nama pelakunya setelah akun dihapus. Kalau nanti audit perlu menyimpan identitas lebih lama, itu harus lewat salinan yang sengaja dibuat untuk audit, bukan lewat foreign key ke akun hidup.
+
+### Blueprint terkait
+`supabase/migrations/20260809185734_attribution_survives_user_deletion.sql`, `docs/SCHEMA.md` §12
+
+### Menggantikan
+Tidak ada
+
+---
+
 # 5. KEPUTUSAN YANG WAJIB DIBUAT SAAT IMPLEMENTASI BILA RELEVAN
 
 Saat Agent benar-benar menjalankan project, keputusan berikut belum boleh diasumsikan dan harus dicatat jika significant:
