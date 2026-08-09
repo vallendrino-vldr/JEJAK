@@ -4,11 +4,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Jejak — Periksa sebelum percaya",
-    template: "%s — Jejak",
+    default: "JEJAK — Periksa sebelum percaya",
+    template: "%s — JEJAK",
   },
   description: "Pemeriksaan jejak digital dan workspace investigasi berbasis bukti.",
-  applicationName: "Jejak",
+  applicationName: "JEJAK",
 };
 
 export const viewport: Viewport = {

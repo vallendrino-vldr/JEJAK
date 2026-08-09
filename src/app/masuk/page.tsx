@@ -36,9 +36,7 @@ export default async function MasukPage({
       <section className="foundation-card" aria-labelledby="masuk-title">
         <Wordmark ukuran="besar" />
         <h1 id="masuk-title">Masuk dulu, baru periksa.</h1>
-        <p className="foundation-copy">
-          Jejak memakai akun Google supaya lo nggak perlu bikin kata sandi baru.
-        </p>
+        <p className="foundation-copy">Masuk pakai Google. Nggak perlu bikin password baru.</p>
 
         {pesan ? (
           <p className="foundation-status" role="alert">
@@ -52,7 +50,7 @@ export default async function MasukPage({
           href={`/auth/masuk-google?lanjut=${encodeURIComponent(tujuan)}`}
           rel="nofollow"
         >
-          Lanjut dengan Google
+          Masuk pakai Google
         </a>
       </section>
     </main>

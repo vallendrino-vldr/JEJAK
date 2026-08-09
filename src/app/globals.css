@@ -474,3 +474,403 @@ button {
     transform: translate3d(-7%, -6%, 0) scale(1.08);
   }
 }
+
+/* ---------------------------------------------------------------- */
+/* Landing page                                                      */
+/* ---------------------------------------------------------------- */
+
+.landing {
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--canvas);
+}
+
+.landing-isi {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--r7);
+  height: 100dvh;
+  padding: calc(var(--r7) + var(--aman-atas)) calc(var(--r5) + var(--aman-kanan))
+    calc(var(--r6) + var(--aman-bawah)) calc(var(--r5) + var(--aman-kiri));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(147, 170, 179, 0.22) transparent;
+}
+
+/* — Hero — */
+
+.landing-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 680px;
+}
+
+.landing-mata {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--r4);
+  opacity: 0.9;
+}
+
+.landing-merek {
+  margin-bottom: var(--r4);
+}
+
+.landing-tagline {
+  margin: 0;
+  font-size: clamp(2.4rem, 8vw, 4.2rem);
+  font-weight: 680;
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+  background: linear-gradient(160deg, var(--ivory), var(--brand-cyan) 70%, var(--aurora-mint));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.landing-sub {
+  max-width: 44ch;
+  margin: var(--r5) 0 0;
+  color: var(--titanium);
+  font-size: 1.05rem;
+  line-height: 1.65;
+  text-align: center;
+}
+
+/* — Demo interaktif — */
+
+.landing-demo {
+  width: 100%;
+  max-width: 560px;
+}
+
+.demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--r3);
+}
+
+.demo-konsol {
+  display: flex;
+  position: relative;
+  align-items: center;
+  gap: var(--r2);
+  padding: var(--r2) var(--r3) var(--r2) var(--r5);
+  border: 1px solid var(--garis-terang);
+  border-radius: var(--lengkung-penuh);
+  background: linear-gradient(150deg, rgba(16, 32, 41, 0.95), rgba(11, 23, 29, 0.82));
+  box-shadow:
+    var(--angkat),
+    var(--kilau-dalam),
+    inset 0 0 32px rgba(82, 215, 255, 0.05);
+  transition:
+    border-color var(--panel) var(--lengkung-gerak),
+    box-shadow var(--panel) var(--lengkung-gerak);
+}
+
+/* Cincin cahaya — penanda objek utama */
+.demo-konsol::before {
+  position: absolute;
+  z-index: -1;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(140deg, var(--brand-cyan), var(--aurora-mint), var(--violet-accent));
+  opacity: 0;
+  filter: blur(14px);
+  content: "";
+  transition: opacity var(--panel) var(--lengkung-gerak);
+}
+
+.demo-konsol[data-status="focus"]::before,
+.demo-konsol[data-status="typing"]::before {
+  opacity: 0.45;
+}
+
+.demo-konsol[data-status="recognized"]::before {
+  opacity: 0.65;
+}
+
+.demo-konsol[data-status="focus"],
+.demo-konsol[data-status="typing"] {
+  border-color: var(--aksen-kuat);
+}
+
+.demo-konsol[data-status="recognized"] {
+  border-color: rgba(101, 240, 197, 0.5);
+}
+
+.demo-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  border: none;
+  background: none;
+  color: var(--ivory);
+  font-size: 1rem;
+  outline: none;
+}
+
+.demo-input::placeholder {
+  color: var(--titanium-redup);
+}
+
+.demo-indikator {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--kaca-tipis);
+  transition:
+    background var(--mikro) var(--lengkung-gerak),
+    transform var(--mikro) var(--lengkung-gerak);
+}
+
+.demo-titik {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--titanium-redup);
+}
+
+.demo-ikon-jenis {
+  color: var(--aurora-mint);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.demo-hasil {
+  min-height: 22px;
+  padding-left: var(--r5);
+  font-size: 0.88rem;
+}
+
+.demo-tanda {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--r2);
+  color: var(--aurora-mint);
+  font-weight: 650;
+}
+
+.demo-tanda-ikon {
+  font-size: 0.9rem;
+}
+
+.demo-ragu {
+  color: var(--titanium-redup);
+  font-weight: 400;
+}
+
+.demo-petunjuk {
+  color: var(--titanium-redup);
+}
+
+/* — CTA — */
+
+.landing-aksi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--r4);
+}
+
+.landing-tombol-utama {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--r3);
+  min-height: 54px;
+  padding: 0 var(--r6);
+  border: 1px solid var(--aksen-kuat);
+  border-radius: var(--lengkung-penuh);
+  color: #04222c;
+  background: linear-gradient(
+    150deg,
+    var(--ice-highlight),
+    var(--brand-cyan) 55%,
+    var(--aurora-mint)
+  );
+  font-size: 1rem;
+  font-weight: 680;
+  text-decoration: none;
+  box-shadow: var(--pendar-aksen);
+  transition:
+    transform var(--mikro) var(--lengkung-gerak),
+    box-shadow var(--panel) var(--lengkung-gerak);
+}
+
+.landing-tombol-utama:hover {
+  box-shadow:
+    var(--pendar-aksen),
+    0 0 48px rgba(82, 215, 255, 0.35);
+}
+
+.landing-tombol-utama:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.landing-gratis {
+  margin: 0;
+  color: var(--titanium-redup);
+  font-size: 0.86rem;
+}
+
+/* — Fitur — */
+
+.landing-fitur {
+  display: grid;
+  gap: var(--r4);
+  width: 100%;
+  max-width: 720px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 600px) {
+  .landing-fitur {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.landing-fitur-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--r2);
+  padding: var(--r5);
+  border: 1px solid var(--garis);
+  border-radius: var(--lengkung);
+  background: var(--kaca-tipis);
+  transition:
+    border-color var(--mikro) var(--lengkung-gerak),
+    background var(--mikro) var(--lengkung-gerak),
+    transform var(--mikro) var(--lengkung-gerak);
+}
+
+.landing-fitur-item:hover {
+  border-color: var(--garis-terang);
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.landing-fitur-ikon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--lengkung-kecil);
+  color: var(--brand-cyan);
+  background: var(--aksen-lembut);
+  font-size: 1.1rem;
+}
+
+.landing-fitur-judul {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.landing-fitur-teks {
+  margin: 0;
+  color: var(--titanium);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+/* — Pasang — */
+
+.landing-pasang {
+  max-width: 560px;
+  padding: var(--r5) var(--r6);
+  border: 1px dashed var(--garis-terang);
+  border-radius: var(--lengkung);
+  text-align: center;
+}
+
+.landing-pasang-judul {
+  margin: 0 0 var(--r3);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.landing-pasang-teks {
+  margin: 0;
+  color: var(--titanium);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* — Footer — */
+
+.landing-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--r3);
+  padding: var(--r5) 0 var(--r4);
+}
+
+.landing-footer-teks {
+  margin: 0;
+  color: var(--titanium-redup);
+  font-size: 0.82rem;
+}
+
+/* — Motion — */
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-hero {
+    animation: landing-masuk var(--reveal) var(--lengkung-gerak) both;
+  }
+
+  .landing-demo {
+    animation: landing-masuk var(--reveal) var(--lengkung-gerak) 120ms both;
+  }
+
+  .landing-aksi {
+    animation: landing-masuk var(--reveal) var(--lengkung-gerak) 200ms both;
+  }
+
+  .landing-fitur {
+    animation: landing-masuk var(--reveal) var(--lengkung-gerak) 280ms both;
+  }
+
+  .landing-mata {
+    animation: mata-mengambang 6s ease-in-out infinite;
+  }
+
+  .demo-konsol[data-status="recognized"] .demo-indikator {
+    animation: demo-tanda-muncul var(--panel) var(--lengkung-gerak);
+  }
+
+  .demo-titik {
+    animation: jejak-denyut 2.8s ease-in-out infinite;
+  }
+}
+
+@keyframes landing-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+@keyframes mata-mengambang {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes demo-tanda-muncul {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+}

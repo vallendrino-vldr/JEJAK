@@ -31,7 +31,7 @@ const RENCANA_PEMERIKSAAN: Record<JenisIdentifier, string[]> = {
   ],
   nama: [
     "Nama saja terlalu ambigu untuk menyimpulkan identitas",
-    "Jejak akan minta petunjuk tambahan sebelum melangkah",
+    "JEJAK bakal minta petunjuk tambahan sebelum melangkah",
   ],
 };
 
@@ -65,13 +65,13 @@ export default async function PeriksaPage({
             ))}
           </ul>
           <p className="catatan">
-            Mesin pemeriksaannya masih dibangun. Selama itu, Jejak nggak bakal nampilin hasil apa
+            Mesin pemeriksaannya masih dibangun. Selama itu, JEJAK nggak bakal nampilin hasil apa
             pun — mendingan kosong daripada ngarang.
           </p>
         </section>
       ) : (
         <p className="kosong">
-          Masukin satu hal di kotak atas. Jejak bakal bilang itu kebaca sebagai apa sebelum ada yang
+          Masukin satu hal di kotak atas. JEJAK bakal bilang itu kebaca sebagai apa sebelum ada yang
           dikerjain.
         </p>
       )}
