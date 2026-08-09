@@ -299,7 +299,9 @@ Jangan baca "ada menunya" sebagai "sudah jadi". Empat tingkat:
 
 ## Next Safe Action Saat Ini
 
-**Mulai Phase 7: Scan Engine + Source Registry.** Phase 6 sudah diverifikasi sehat. Migrasi dasar untuk Scan Targets, Source Registry, dan Scan Source Runs sudah di-push (`20260810042000`).
+**Phase 7: Scan Engine + Source Registry.** 
+Status: `WIRED / FUNCTIONAL_PARTIAL`. 
+Migrasi dasar untuk Scan Targets, Source Registry, dan Scan Source Runs (`20260810042000`). Adapter RDAP end-to-end terhubung ke Evidence Passport dan ledger settlement.
 
 Lakukan berurutan:
 

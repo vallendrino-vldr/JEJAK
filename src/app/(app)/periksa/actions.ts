@@ -44,5 +44,10 @@ export async function actionMulaiPemeriksaan(formData: FormData) {
 
   const result = await mulaiScan(user.id, undefined, "quick_check", targets, idempotencyKey);
 
+  // Trigger executor in background (pseudo-job for now)
+  import("@/lib/scan/executor").then((m) => {
+    m.executeScan(result.scanId).catch(console.error);
+  });
+
   redirect(`/periksa/${result.publicRef}`);
 }
