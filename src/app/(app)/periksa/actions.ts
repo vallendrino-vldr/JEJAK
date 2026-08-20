@@ -1,16 +1,44 @@
 "use server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { mulaiScan } from "@/lib/scan/engine";
 import { redirect } from "next/navigation";
-import { randomUUID } from "node:crypto";
+import { z } from "zod";
+import { deteksiIdentifier } from "@/lib/periksa/deteksi";
+import { dispatchScan } from "@/lib/scan/dispatch";
+import { mulaiScan, ScanStartError } from "@/lib/scan/engine";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function actionMulaiPemeriksaan(formData: FormData) {
-  const masukan = formData.get("masukan") as string;
-  const jenis = formData.get("jenis") as string;
+const masukanSchema = z.string().trim().min(1).max(500);
+const nonceSchema = z.uuid();
 
-  if (!masukan || !jenis) {
-    throw new Error("Target tidak valid");
+export type HasilMulaiPemeriksaan = { galat: string } | null;
+
+function pesanMulaiGagal(error: ScanStartError): string {
+  switch (error.code) {
+    case "unsupported":
+      return "Jenis pemeriksaan ini belum aktif.";
+    case "invalid":
+      return "Domainnya nggak kebaca. Cek lagi ejaannya, ya.";
+    case "conflict":
+      return "Permintaan ini udah dipakai buat pemeriksaan lain. Muat ulang halaman lalu coba lagi.";
+    default:
+      return "Mesin pemeriksaan lagi nggak tersedia. Kredit lo belum dipotong.";
+  }
+}
+
+export async function actionMulaiPemeriksaan(
+  _state: HasilMulaiPemeriksaan,
+  formData: FormData,
+): Promise<HasilMulaiPemeriksaan> {
+  const hasilMasukan = masukanSchema.safeParse(formData.get("masukan"));
+  const hasilNonce = nonceSchema.safeParse(formData.get("nonce"));
+
+  if (!hasilMasukan.success || !hasilNonce.success) {
+    return { galat: "Permintaannya nggak valid. Muat ulang halaman lalu coba lagi." };
+  }
+
+  const deteksi = deteksiIdentifier(hasilMasukan.data);
+  if (!deteksi || deteksi.jenis !== "domain") {
+    return { galat: "Untuk sekarang, pemeriksaan yang aktif baru domain." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -18,36 +46,28 @@ export async function actionMulaiPemeriksaan(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/masuk");
+  if (!user) redirect("/masuk");
+
+  let scan: Awaited<ReturnType<typeof mulaiScan>>;
+  try {
+    scan = await mulaiScan({
+      productCode: "quick_check",
+      targetType: "domain",
+      targetValue: deteksi.ternormalisasi,
+      idempotencyKey: hasilNonce.data,
+    });
+  } catch (error) {
+    return {
+      galat:
+        error instanceof ScanStartError
+          ? pesanMulaiGagal(error)
+          : pesanMulaiGagal(new ScanStartError("unavailable")),
+    };
   }
 
-  const idempotencyKey = randomUUID(); // Sederhananya pakai random UUID. Di production client kirim nonce.
+  // Outbox di DB tetap pending kalau pemicu ini putus. Halaman hasil akan
+  // mengklaimnya lagi; jadi crash sesudah commit tidak membuat scan yatim.
+  await dispatchScan(scan.scanId);
 
-  // Privacy audit: Mask display value & hash the real value
-  let displayValueMasked = masukan;
-  if (jenis === "email" && masukan.includes("@")) {
-    const [name, dom] = masukan.split("@");
-    displayValueMasked = `${name.slice(0, 2)}***@${dom}`;
-  } else if (jenis === "nomor_hp") {
-    displayValueMasked = masukan.slice(0, 4) + "***" + masukan.slice(-2);
-  }
-
-  // Sebaiknya pakai HMAC dengan key rahasia, untuk sekarang hash SHA-256 dasar
-  const encoder = new TextEncoder();
-  const dataBuf = encoder.encode(masukan + process.env.SUPABASE_SECRET_KEY);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuf);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const normalizedValueHmac = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-
-  const targets = [{ type: jenis, displayValue: displayValueMasked, normalizedValueHmac }];
-
-  const result = await mulaiScan(user.id, undefined, "quick_check", targets, idempotencyKey);
-
-  // Trigger executor in background (pseudo-job for now)
-  import("@/lib/scan/executor").then((m) => {
-    m.executeScan(result.scanId).catch(console.error);
-  });
-
-  redirect(`/periksa/${result.publicRef}`);
+  redirect(`/periksa/${scan.publicRef}`);
 }

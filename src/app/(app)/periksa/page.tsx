@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { randomUUID } from "node:crypto";
+import { FormMulaiScan } from "@/components/periksa/form-mulai-scan";
 import { SearchConsole } from "@/components/periksa/search-console";
 import { deteksiIdentifier, type JenisIdentifier } from "@/lib/periksa/deteksi";
-import { actionMulaiPemeriksaan } from "./actions";
 
 export const metadata: Metadata = { title: "Periksa" };
 
@@ -23,8 +24,8 @@ const RENCANA_PEMERIKSAAN: Record<JenisIdentifier, string[]> = {
   ],
   domain: [
     "Catatan pendaftaran domain lewat RDAP",
-    "Konfigurasi DNS dan tempat domain diarahkan",
-    "Halaman publik yang alamatnya sudah diketahui",
+    "Status, tanggal penting, registrar, dan nameserver yang tersedia",
+    "Catatan publik apa adanya — bukan vonis aman atau berbahaya",
   ],
   username: [
     "Pola penggunaan handle yang sama di layanan publik",
@@ -44,16 +45,18 @@ export default async function PeriksaPage({
   const { q } = await searchParams;
   const masukan = typeof q === "string" ? q : "";
   const deteksi = deteksiIdentifier(masukan);
+  const nonce = randomUUID();
 
-  let costExact = null;
-  if (deteksi) {
+  let costExact: number | null = null;
+  if (deteksi?.jenis === "domain") {
     const { createSupabaseServerClient } = await import("@/lib/supabase/server");
     const supabase = await createSupabaseServerClient();
     const { data: product } = await supabase
       .from("scan_products")
       .select("base_credit_cost")
       .eq("code", "quick_check")
-      .single();
+      .eq("active", true)
+      .maybeSingle();
     if (product) {
       costExact = product.base_credit_cost;
     }
@@ -79,18 +82,31 @@ export default async function PeriksaPage({
               </li>
             ))}
           </ul>
-          <p className="catatan">
-            Mesin pemeriksaannya masih dibangun. Selama itu, JEJAK nggak bakal nampilin hasil apa
-            pun — mendingan kosong daripada ngarang.
-          </p>
-
-          <form action={actionMulaiPemeriksaan} className="mt-8">
-            <input type="hidden" name="masukan" value={masukan} />
-            <input type="hidden" name="jenis" value={deteksi.jenis} />
-            <button type="submit" className="tombol tombol-utama" disabled={costExact === null}>
-              {costExact !== null ? `Mulai Pemeriksaan (${costExact} Kredit)` : "Memuat harga..."}
-            </button>
-          </form>
+          {deteksi.jenis === "domain" ? (
+            <>
+              <p className="catatan">
+                Versi awal ini cuma memakai RDAP. Kalau sumbernya nggak ngasih hasil yang cukup,
+                pemeriksaan ditutup tanpa biaya dan kredit balik otomatis.
+              </p>
+              {costExact !== null ? (
+                <FormMulaiScan masukan={deteksi.ternormalisasi} nonce={nonce} biaya={costExact} />
+              ) : (
+                <button type="button" className="tombol tombol-utama mt-8" disabled>
+                  Mesin pemeriksaan belum tersedia
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="catatan">
+                Jenis ini belum aktif. Nggak ada pemeriksaan yang dimulai dan nggak ada kredit yang
+                dipotong.
+              </p>
+              <button type="button" className="tombol tombol-utama mt-8" disabled>
+                Pemeriksaan belum tersedia
+              </button>
+            </>
+          )}
         </section>
       ) : (
         <p className="kosong">

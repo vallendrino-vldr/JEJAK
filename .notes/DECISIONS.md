@@ -3206,6 +3206,118 @@ Tidak ada
 
 ---
 
+## DEC-0121 — Ledger kredit adalah boundary service-only dan idempotent
+
+**Status:** AKTIF
+
+**Phase:** 6–7
+
+**Tanggal:** 2026-08-20
+
+### Masalah
+Fungsi ledger berhak tinggi masih bisa diwarisi lewat grant bawaan PostgreSQL, beberapa retry dapat membuat transaksi kedua, dan biaya negatif membuka peluang saldo bertambah dari operasi settle yang salah. Urutan lock yang berbeda antar reserve/settle/release juga dapat membuat dua scan satu wallet saling menunggu.
+
+### Keputusan
+Semua fungsi grant, reserve, settle, release, dan expiry dicabut dari `PUBLIC`, `anon`, serta `authenticated`, lalu hanya diberikan ke `service_role`. Setiap biaya dan mutasi wajib non-negatif serta konsisten dengan hold. Satu scan hanya boleh punya satu transaksi per tahap, idempotency replay harus mengembalikan hasil lama, replay yang berbeda harus ditolak, dan semua jalur ledger mengunci wallet lebih dulu sebelum hold/lot.
+
+### Alasan
+Kredit adalah aset bernilai uang. Pengamanan utamanya harus hidup di database, bukan bergantung pada semua pemanggil aplikasi mengingat aturan yang sama.
+
+### Dampak
+Browser tidak pernah memanggil fungsi ledger langsung. Flow user harus masuk lewat boundary scan yang memverifikasi identitas, akses, quote, dan state. Perubahan privilege dan invariant punya test SQL tersendiri.
+
+### Blueprint terkait
+`docs/SCHEMA.md` bagian Credit, `docs/ROADMAP.md` Phase 6–7, `supabase/migrations/20260820111139_secure_credit_ledger_functions.sql`, `supabase/migrations/20260820111918_harden_credit_ledger_invariants.sql`
+
+### Menggantikan
+Memperketat implementasi ledger sebelum 2026-08-20 yang masih permisif dan belum idempotent penuh.
+
+---
+
+## DEC-0122 — Workflow durable memakai Vercel Workflow dan transactional outbox database
+
+**Status:** AKTIF
+
+**Phase:** 7
+
+**Tanggal:** 2026-08-20
+
+### Masalah
+Menjalankan executor dari Server Action sebagai Promise lepas membuat hold kredit dapat tertinggal saat request selesai, proses crash, atau user menutup browser. Database juga tidak bisa meng-commit scan dan memulai layanan workflow eksternal dalam satu transaksi yang sama.
+
+### Keputusan
+Runtime durable memakai package stabil `workflow` 4.8.4. RPC `mulai_scan` membuat scan, source runs, dan `scan_dispatch_jobs` dalam satu transaksi. Dispatcher mengklaim outbox dengan token + lease, memulai workflow, lalu ack/nack secara idempotent. Submit mencoba dispatch langsung; halaman hasil mengulang dispatch untuk job yang masih pending. Workflow run ID mencegah eksekusi ganda. Hanya ID yang boleh melewati boundary durable; target asli dibuka di step server dari database.
+
+### Alasan
+Transactional outbox menutup celah “scan tercatat tapi workflow hilang”. Workflow durable menutup celah crash/retry di tengah sumber. Recovery dari halaman hasil memberi retry cepat tanpa mengandalkan cron berfrekuensi rendah.
+
+### Dampak
+Database menjadi sumber kebenaran status. Kode workflow tidak boleh menyerialisasi target rahasia atau secret. Migration outbox harus diterapkan sebelum kode baru boleh dideploy ke production.
+
+### Blueprint terkait
+`docs/ROADMAP.md` Phase 7.4, `src/lib/scan/dispatch.ts`, `src/workflows/scan.ts`, `supabase/migrations/20260820112824_atomic_scan_workflow_boundary.sql`
+
+### Menggantikan
+Menggantikan executor fire-and-forget pada vertical slice RDAP awal.
+
+---
+
+## DEC-0123 — Domain dan RDAP dipoles dulu; no-result tidak pernah dianggap aman
+
+**Status:** AKTIF
+
+**Phase:** 7
+
+**Tanggal:** 2026-08-20
+
+### Masalah
+Registry awal mencantumkan banyak source yang belum punya adapter produksi. Kode awal juga memakai code source yang berbeda dari seed, menganggap no-result sebagai sukses, dan dapat memotong kredit tanpa hasil yang tersimpan.
+
+### Keputusan
+Hanya target Domain dan source `core_rdap` yang aktif/implemented pada vertical slice pertama. Adapter wajib memvalidasi target, timeout, ukuran respons, redirect, DNS, dan seluruh IP tujuan untuk mencegah SSRF. Success wajib membawa object hasil dengan setidaknya satu fakta bermakna. `no_result` selalu coverage nol, copy-nya eksplisit “bukan berarti aman”, dan scan direfund bila standar minimum tidak tercapai. Metadata yang disimpan hanya field RDAP yang sudah dinormalisasi; Evidence Passport dibuat bila ada Case, sementara hasil scan tanpa Case tetap ada di source run.
+
+### Alasan
+Satu source yang jujur, aman, dan benar-benar bisa diretry lebih bernilai daripada registry besar berisi source palsu atau belum siap.
+
+### Dampak
+Username, phone, email, name, password exposure, DNS, dan public page tetap disabled sampai adapter + test + governor masing-masing siap. Source baru harus mengikuti kontrak status, coverage, retry, metadata aman, dan reverify.
+
+### Blueprint terkait
+`docs/ROADMAP.md` Phase 7.1–7.14, `src/lib/scan/adapters/rdap.ts`, `src/lib/security/public-network.ts`, `supabase/migrations/20260820112824_atomic_scan_workflow_boundary.sql`
+
+### Menggantikan
+Memperketat vertical slice RDAP pada commit `f996117`.
+
+---
+
+## DEC-0124 — Harga, standar hasil, dan bonus pertama dibekukan atomik saat scan dibuat
+
+**Status:** AKTIF
+
+**Phase:** 7
+
+**Tanggal:** 2026-08-20
+
+### Masalah
+Harga atau minimum deliverable pada produk dapat berubah saat scan masih berjalan. Jika finalisasi membaca konfigurasi terbaru, user bisa ditagih dengan aturan yang berbeda dari saat menekan tombol. Bonus pemeriksaan pertama juga harus auditable dan tidak boleh diklaim dua kali oleh request bersamaan.
+
+### Keputusan
+Quote menyimpan snapshot biaya final, minimum deliverable, dan versi produk. `mulai_scan` memakai advisory lock per user + idempotency key, mengklaim `first_quick_check` tepat sekali, menerbitkan lot bonus berumur 30 hari, lalu membuat quote/scan/target/source run/outbox dalam transaksi yang sama. Finalisasi hanya membaca snapshot quote tersebut.
+
+### Alasan
+Aturan komersial harus pasti di titik user menyetujui scan. Bonus tetap gratis untuk user, tetapi jejak ledger dan masa berlakunya harus sama rapi dengan kredit berbayar.
+
+### Dampak
+Perubahan harga atau standar produk hanya berlaku ke scan baru. Retry submit tidak menggandakan bonus, quote, scan, hold, atau dispatch job.
+
+### Blueprint terkait
+`docs/ROADMAP.md` Phase 7.5–7.7, `docs/SCHEMA.md` bagian Quote/Credit, `supabase/migrations/20260820112824_atomic_scan_workflow_boundary.sql`
+
+### Menggantikan
+Tidak ada.
+
+---
+
 # 5. KEPUTUSAN YANG WAJIB DIBUAT SAAT IMPLEMENTASI BILA RELEVAN
 
 Saat Agent benar-benar menjalankan project, keputusan berikut belum boleh diasumsikan dan harus dicatat jika significant:

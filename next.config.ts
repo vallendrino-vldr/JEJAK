@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import packageJson from "./package.json";
+import { withWorkflow } from "workflow/next";
 
 const isProduction = process.env.NODE_ENV === "production";
 const appVersion = process.env.APP_VERSION ?? packageJson.version;
@@ -49,4 +50,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withWorkflow(nextConfig);
