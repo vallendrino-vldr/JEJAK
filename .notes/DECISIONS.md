@@ -3348,6 +3348,36 @@ Tidak ada.
 
 ---
 
+## DEC-0126 — Namespace internal Workflow SDK tidak melewati auth redirect user
+
+**Status:** AKTIF
+
+**Phase:** 7
+
+**Tanggal:** 2026-08-20
+
+### Masalah
+Proxy sesi Supabase awalnya memproses seluruh path non-static. Akibatnya request mesin ke `/.well-known/workflow/v1/flow` ikut dianggap sebagai kunjungan user tanpa sesi dan diubah menjadi redirect ke `/masuk`. Dispatch terlihat sukses, tetapi workflow tidak pernah berjalan dan scan tertinggal di status `requested`.
+
+### Keputusan
+Namespace reserved `/.well-known/workflow/v1` dan turunannya diteruskan langsung ke handler Workflow SDK sebelum proxy sesi Supabase berjalan. Pencocokan wajib memakai exact prefix boundary: path harus sama dengan prefix atau diawali `prefix/`. Path serupa seperti `/v10`, `/v1evil`, encoded separator, dan backslash tidak boleh mendapat bypass.
+
+Route aplikasi, halaman user, dan API dispatch tetap melewati auth Supabase. Autentikasi request mesin di namespace reserved menjadi tanggung jawab handler Workflow SDK, bukan session cookie user.
+
+### Alasan
+Flow, step, dan webhook adalah endpoint komunikasi antarmesin. Memaksanya memakai login browser memutus durable workflow. Memisahkan boundary di proxy menjaga endpoint SDK bisa menerima body/header aslinya tanpa memperluas daftar route publik aplikasi.
+
+### Dampak
+Scan lokal signed-in sekarang benar-benar mencapai flow/step, membuat hold, menjalankan RDAP, lalu settle atau refund. Matcher punya regression test untuk path valid dan spoof. Namespace child yang tidak dikenal tetap berakhir 404 di router Next.
+
+### Blueprint terkait
+`src/proxy.ts`, `src/lib/workflow/internal-route.ts`, `src/lib/workflow/internal-route.test.ts`
+
+### Menggantikan
+Tidak ada.
+
+---
+
 # 5. KEPUTUSAN YANG WAJIB DIBUAT SAAT IMPLEMENTASI BILA RELEVAN
 
 Saat Agent benar-benar menjalankan project, keputusan berikut belum boleh diasumsikan dan harus dicatat jika significant:

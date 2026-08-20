@@ -13,9 +13,9 @@
 | Current Milestone | Vertical slice Domain + RDAP yang durable, aman, dan refundable |
 | Current Branch | `codex/phase7-domain-rdap-hardening` |
 | Baseline Commit | `f996117` — `feat(scan): implement RDAP vertical slice with evidence wiring and settlement` |
-| Latest Checkpoint | commit ini — `fix(supabase): lock canonical project boundary` |
-| Working Tree | Bersih setelah checkpoint; preview/PR QA masih pending |
-| Latest Deploy | app `0.1.0`, build ID `5b5fbd4d3e34`; lebih lama dari baseline lokal |
+| Latest Checkpoint | commit ini — `fix(workflow): keep internal runner outside auth redirect` |
+| Working Tree | Bersih setelah follow-up workflow + signed-in QA |
+| Latest Deploy | Preview checkpoint `2d757b4` sukses; production tetap build lama `5b5fbd4d3e34` |
 | Local Migration Head | `20260820150759_revoke_global_function_defaults.sql` |
 | Applied Migration Head | Canonical lama: `20260820150759` (20 migration); duplikat baru tetap kosong |
 | Last Updated | 2026-08-20 oleh Codex |
@@ -29,34 +29,37 @@
 - RDAP menjadi source live pertama. Adapter punya timeout, batas respons, klasifikasi retry, redirect guard, DNS/IP guard, dan normalisasi metadata aman.
 - SSRF guard menolak localhost, jaringan privat/reserved, IPv6 terselubung, mapped IPv4, NAT64, 6to4, port/credential URL, serta redirect ke tujuan tidak aman.
 - Workflow scan memakai Vercel Workflow. Payload durable hanya berisi ID; target asli baru dibuka di langkah server yang memerlukannya.
+- Namespace mesin `/.well-known/workflow/v1` sekarang melewati redirect login secara exact. Path tiruan tetap ditolak, sementara flow/step/webhook asli mencapai handler Workflow SDK.
 - Dispatch memakai transactional outbox di database, dispatch langsung setelah submit, dan recovery dari halaman hasil. Menutup browser tidak membatalkan record scan.
 - Claim source eksklusif memakai token + lease. Retry melepas claim; replay identik aman; hasil berbeda untuk run yang sama ditolak.
 - `no_result` selalu bernilai coverage nol, tidak disebut aman, dan kredit dilepas/refund bila standar minimum tidak tercapai.
 - Evidence Passport hanya menerima metadata RDAP yang sudah dinormalisasi dan aman. Hasil tanpa Case tetap tersimpan pada source run/scan.
 - Halaman hasil `/periksa/[ref]` menampilkan status nyata tanpa persen palsu, berhenti polling saat terminal, dan punya copy eksplisit untuk selesai, gagal, batal, partial, serta refund.
 - Form periksa dan halaman hasil responsif, keyboard/touch friendly, serta menghormati reduced motion.
+- Navigasi Owner tidak lagi menawarkan Ruang Kendali Phase 10 yang belum punya halaman. Tombol Dompet/Kembali tetap punya nama aksesibel saat label visual disembunyikan di HP.
 - Dependency transitive `nanoid` dan `undici` dipaksa ke versi aman; audit dependency bersih.
 
 ## Sedang Dikerjakan
 
-- Preview SHA checkpoint, PR Quality Gate, dan signed-in browser QA.
+- Draft PR [#1](https://github.com/vallendrino-vldr/JEJAK/pull/1) sudah terbuka. Quality Gate dan preview checkpoint hijau; follow-up workflow ini perlu preview final sebelum PR diubah dari draft.
+- Signed-in QA di preview masih menunggu akses melewati Vercel SSO. Runtime lokal sudah memakai sesi Google asli dan database canonical.
 
 ## Audit Supabase 2026-08-20
 
 - Project lama `tauyicvfhpfnohhgccvn` resmi canonical. Production OAuth terbukti mengarah ke ref ini; Google provider aktif dan handoff sampai `accounts.google.com` memakai callback ref yang sama.
 - Database canonical PostgreSQL 17.6 sudah di-upgrade dari 15 ke 20 migration, head `20260820150759`. Seluruh 24 tabel public ber-RLS.
-- State asli tetap bersih: 1 Auth user Google yang aktif sebagai Owner, 1 profile, 1 wallet, 2 bucket private kosong, dan 2 nama secret Vault identifier. Tidak ada case, scan, transaksi, storage object, atau fixture test tersisa.
+- Sebelum browser QA, state asli berisi 1 Auth user Google aktif sebagai Owner, 1 profile, 1 wallet, 2 bucket private kosong, dan 2 nama secret Vault identifier; tidak ada case/scan/storage object.
+- Sesudah QA ada dua jejak yang sengaja dipertahankan: satu selesai dengan RDAP `icann.org`, satu berakhir `refunded` untuk domain acak tanpa hasil. Tiga scan macet/gagal pra-patch sudah dihapus setelah dipastikan tidak punya hold atau potongan kredit. Kredit yang dipakai buat QA diganti lewat grant audit bernama `qa_browser_credit_restore`; saldo Owner kembali 1 dan reserved 0.
 - Ledger/worker RPC service-only; `mulai_scan` dan boundary user exact-allowlist. Semua SECURITY DEFINER public punya `anon EXECUTE = false`.
 - Default privilege role postgres ditutup global **dan** per-schema. Suite membuat function probe sementara dan membuktikan anon/authenticated tidak mewarisi EXECUTE, lalu menghapus probe di statement yang sama.
 - `.env.local` sekarang menunjuk canonical lama dan tetap ignored. CLI sengaja di-unlink karena login CLI milik akun project duplikat; `db-test` fail-closed kecuali DB URL/link match ref canonical.
 - Project baru `gzmtzdvxerpvetfmqale` tetap Free, ACTIVE_HEALTHY, dan kosong. Ia cuma cadangan kosong sementara—bukan rollback siap pakai karena belum punya schema/data/OAuth/config production—sampai preview + production signed-in QA stabil; belum dihapus/di-pause.
-- Production masih build lama `5b5fbd4d3e34`. Branch preview remote masih SHA `689e9f4`, jadi belum memuat hardening post-migration terbaru.
+- Production masih build lama `5b5fbd4d3e34`. Preview dari checkpoint `2d757b4` sudah sukses, tetapi env dan runtime signed-in preview belum boleh dianggap tervalidasi sampai QA SHA final selesai.
 
 ## Belum
 
-- Flow login → scan Domain → hasil → settle/refund belum bisa dites dengan session asli.
-- QA visual signed-in pada viewport HP dan desktop belum bisa dilakukan.
-- Preview untuk SHA checkpoint dan Quality Gate PR belum diverifikasi.
+- Flow signed-in di preview belum bisa dites karena deployment preview dilindungi Vercel SSO. Lokal sudah membuktikan login/session asli → scan sukses → settle dan scan tanpa hasil → refund.
+- Preview untuk SHA follow-up runner belum selesai.
 - Production belum menjalankan vertical slice Phase 7 terbaru.
 - Source Governor Phase 7 belum lengkap: budget harian, health score, dan circuit breaker.
 - Source dan target setelah Domain/RDAP (DNS, username, phone, email, name, password exposure, public page) belum diaktifkan.
@@ -68,34 +71,34 @@
 | Format | PASS | 2026-08-20 | `pnpm format:check` |
 | Lint | PASS | 2026-08-20 | `pnpm lint` |
 | TypeScript | PASS | 2026-08-20 | `pnpm typecheck` |
-| Unit tests | PASS | 2026-08-20 | 75/75 test, 8 file |
+| Unit tests | PASS | 2026-08-20 | 86/86 test, 9 file; termasuk 11 matcher/spoof route Workflow |
 | Workflow tests | PASS | 2026-08-20 | 8/8 termasuk duplicate, lease, retry, refund |
 | Production build lokal | PASS | 2026-08-20 | Next.js build; Workflow menemukan 9 steps / 1 workflow |
 | Dependency audit | PASS | 2026-08-20 | Tidak ada advisory yang dikenal |
 | Secret scan | PASS | 2026-08-20 | Semua candidate files bersih; `.env.local` dan `JEJAK.md` confirmed ignored |
-| Local runtime smoke | PASS | 2026-08-20 | `/` dan `/api/version` = 200; protected routes = redirect login |
+| Local runtime smoke | PASS | 2026-08-20 | Endpoint mesin Workflow mencapai SDK; route user tetap redirect login tanpa sesi |
 | Integration tests | PASS | 2026-08-20 | 28/28 terhadap project canonical lama |
 | SQL database tests | PASS | 2026-08-20 | 9/9 suite live; isolation, ledger, workflow, SECURITY DEFINER, default ACL |
 | Migration history | PASS | 2026-08-20 | Local/remote 20/20, head `20260820150759` |
 | DB lint + Security Advisor | PASS | 2026-08-20 | Tidak ada issue level error/warn setelah migration |
 | RLS + Ledger live | PASS | 2026-08-20 | Privilege matrix live + suite PostgreSQL hijau |
-| Signed-in browser QA | PENDING | 2026-08-20 | Perlu preview SHA final dan session Google asli |
+| Signed-in browser QA | PARTIAL PASS | 2026-08-20 | Lokal: sesi Google asli, desktop + HP 390×844, success/settle + no-result/refund, saldo 1/reserved 0; preview masih tertahan SSO |
 | Production deploy | NOT DEPLOYED | 2026-08-20 | Build live masih `5b5fbd4d3e34`; batch ini belum didorong |
 
 ## Known Issues dan Blocker
 
 - CLI saat ini terautentikasi ke akun pemilik project duplikat dan sengaja tidak ditautkan. Operasi DB canonical harus memakai URL tervalidasi atau login akun lama.
-- Preview Vercel dilindungi SSO dan remote masih SHA lama; QA signed-in belum mewakili working tree final.
+- Preview Vercel dilindungi SSO; QA signed-in lokal belum menggantikan bukti runtime preview final.
 - Production masih build lama. Jangan merge sebelum preview final membuktikan login → scan → hasil → settle/refund.
 - Free plan dapat pause saat lama tidak aktif dan tidak memberi backup otomatis; tetapkan strategi backup sebelum menerima data user nyata.
 - Docker Desktop tidak tersedia, jadi cache katalog/local reset Supabase CLI tidak jalan. Ini tidak memengaruhi migration/test remote yang sudah hijau.
 
 ## Next Safe Action
 
-1. Pastikan preview Vercel baru berasal dari SHA checkpoint dan env-nya tetap menunjuk project canonical lama.
-2. Browser QA akun asli pada HP + desktop: success, no-result/refund, insufficient credit, duplicate submit, tutup-buka browser, dan akses scan milik user lain.
-3. Buka/cek PR supaya GitHub Quality Gate berjalan; merge/deploy production hanya setelah preview hijau.
-4. Verifikasi production signed-in dan `/api/version`; observasi ledger/scan tanpa data fixture.
+1. Push follow-up workflow, tunggu GitHub Quality Gate + preview Vercel dari SHA final, dan pastikan env tetap menunjuk canonical lama.
+2. Jalankan signed-in preview QA lewat akses Vercel: success/refund, duplicate submit, tutup-buka browser, dan akses scan milik user lain.
+3. Ubah PR dari draft lalu merge/deploy production hanya setelah preview final hijau.
+4. Verifikasi production signed-in dan `/api/version`; observasi ledger/scan tanpa fixture tambahan.
 5. Setelah production stabil, hapus project duplikat baru untuk membebaskan slot Free dan bersihkan credential bootstrap lokalnya.
 6. Lanjutkan Source Governor (budget, health, circuit breaker), lalu source berikutnya sesuai ROADMAP.
 
@@ -106,6 +109,7 @@
 - DEC-0123 — Domain/RDAP dipoles dulu; no-result tidak pernah dianggap aman.
 - DEC-0124 — Harga, standar hasil, dan bonus pertama dibekukan atomik saat scan dibuat.
 - DEC-0125 — Project Supabase lama adalah canonical; duplikat baru hanya cadangan kosong sementara.
+- DEC-0126 — Namespace mesin Workflow SDK melewati auth redirect user dengan matcher exact.
 
 ## Relevant Files
 
@@ -129,4 +133,4 @@
 
 ## Handoff Singkat
 
-Saat user bilang `lanjut`, mulai dari preview SHA checkpoint + PR Quality Gate + signed-in QA di atas—jangan mengulang provisioning dan jangan push ke project duplikat. Database canonical sudah migrated dan terbukti hijau; Phase 7 tetap belum selesai sampai flow signed-in dilihat berjalan di preview lalu production.
+Saat user bilang `lanjut`, mulai dari checks + preview SHA final di PR #1 lalu signed-in preview QA—jangan mengulang provisioning dan jangan push ke project duplikat. Runtime lokal sudah membuktikan settle dan refund dengan sesi asli; Phase 7 tetap belum selesai sampai bukti yang sama terlihat di preview lalu production.
