@@ -13,11 +13,11 @@
 | Current Milestone | Vertical slice Domain + RDAP yang durable, aman, dan refundable |
 | Current Branch | `codex/phase7-domain-rdap-hardening` |
 | Baseline Commit | `f996117` — `feat(scan): implement RDAP vertical slice with evidence wiring and settlement` |
-| Latest Checkpoint | branch HEAD — `feat(scan): harden durable RDAP workflow` |
-| Working Tree | Bersih setelah checkpoint; deterministic gates hijau, live DB gate blocked |
+| Latest Checkpoint | commit ini — `fix(supabase): lock canonical project boundary` |
+| Working Tree | Bersih setelah checkpoint; preview/PR QA masih pending |
 | Latest Deploy | app `0.1.0`, build ID `5b5fbd4d3e34`; lebih lama dari baseline lokal |
-| Local Migration Head | `20260820112824_atomic_scan_workflow_boundary.sql` |
-| Applied Migration Head | Belum bisa diverifikasi karena project Supabase tidak dapat dijangkau |
+| Local Migration Head | `20260820150759_revoke_global_function_defaults.sql` |
+| Applied Migration Head | Canonical lama: `20260820150759` (20 migration); duplikat baru tetap kosong |
 | Last Updated | 2026-08-20 oleh Codex |
 
 ## Selesai di Working Tree
@@ -39,14 +39,25 @@
 
 ## Sedang Dikerjakan
 
-- Tidak ada coding aktif yang aman dilanjutkan sebelum project Supabase yang benar bisa dijangkau dan migration diterapkan.
+- Preview SHA checkpoint, PR Quality Gate, dan signed-in browser QA.
+
+## Audit Supabase 2026-08-20
+
+- Project lama `tauyicvfhpfnohhgccvn` resmi canonical. Production OAuth terbukti mengarah ke ref ini; Google provider aktif dan handoff sampai `accounts.google.com` memakai callback ref yang sama.
+- Database canonical PostgreSQL 17.6 sudah di-upgrade dari 15 ke 20 migration, head `20260820150759`. Seluruh 24 tabel public ber-RLS.
+- State asli tetap bersih: 1 Auth user Google yang aktif sebagai Owner, 1 profile, 1 wallet, 2 bucket private kosong, dan 2 nama secret Vault identifier. Tidak ada case, scan, transaksi, storage object, atau fixture test tersisa.
+- Ledger/worker RPC service-only; `mulai_scan` dan boundary user exact-allowlist. Semua SECURITY DEFINER public punya `anon EXECUTE = false`.
+- Default privilege role postgres ditutup global **dan** per-schema. Suite membuat function probe sementara dan membuktikan anon/authenticated tidak mewarisi EXECUTE, lalu menghapus probe di statement yang sama.
+- `.env.local` sekarang menunjuk canonical lama dan tetap ignored. CLI sengaja di-unlink karena login CLI milik akun project duplikat; `db-test` fail-closed kecuali DB URL/link match ref canonical.
+- Project baru `gzmtzdvxerpvetfmqale` tetap Free, ACTIVE_HEALTHY, dan kosong. Ia cuma cadangan kosong sementara—bukan rollback siap pakai karena belum punya schema/data/OAuth/config production—sampai preview + production signed-in QA stabil; belum dihapus/di-pause.
+- Production masih build lama `5b5fbd4d3e34`. Branch preview remote masih SHA `689e9f4`, jadi belum memuat hardening post-migration terbaru.
 
 ## Belum
 
-- Tiga migration baru belum diterapkan ke database live.
-- SQL invariant/RLS/ledger suite belum bisa dieksekusi ke database.
 - Flow login → scan Domain → hasil → settle/refund belum bisa dites dengan session asli.
 - QA visual signed-in pada viewport HP dan desktop belum bisa dilakukan.
+- Preview untuk SHA checkpoint dan Quality Gate PR belum diverifikasi.
+- Production belum menjalankan vertical slice Phase 7 terbaru.
 - Source Governor Phase 7 belum lengkap: budget harian, health score, dan circuit breaker.
 - Source dan target setelah Domain/RDAP (DNS, username, phone, email, name, password exposure, public page) belum diaktifkan.
 
@@ -63,31 +74,30 @@
 | Dependency audit | PASS | 2026-08-20 | Tidak ada advisory yang dikenal |
 | Secret scan | PASS | 2026-08-20 | Semua candidate files bersih; `.env.local` dan `JEJAK.md` confirmed ignored |
 | Local runtime smoke | PASS | 2026-08-20 | `/` dan `/api/version` = 200; protected routes = redirect login |
-| Integration tests | PARTIAL | 2026-08-20 | 27/28 pass; satu private-bucket test gagal karena host Supabase `ENOTFOUND` |
-| SQL database tests | BLOCKED | 2026-08-20 | 8/8 suite berhenti sebelum test: pooler menolak tenant/user project |
-| Static migration audit | PASS | 2026-08-20 | Final verdict `GO`; eksekusi PostgreSQL tetap wajib setelah DB pulih |
-| RLS + Ledger live | UNVERIFIED | 2026-08-20 | Test dan migration lokal tersedia, belum bisa dijalankan live |
-| Signed-in browser QA | BLOCKED | 2026-08-20 | Endpoint Supabase project tidak resolve |
+| Integration tests | PASS | 2026-08-20 | 28/28 terhadap project canonical lama |
+| SQL database tests | PASS | 2026-08-20 | 9/9 suite live; isolation, ledger, workflow, SECURITY DEFINER, default ACL |
+| Migration history | PASS | 2026-08-20 | Local/remote 20/20, head `20260820150759` |
+| DB lint + Security Advisor | PASS | 2026-08-20 | Tidak ada issue level error/warn setelah migration |
+| RLS + Ledger live | PASS | 2026-08-20 | Privilege matrix live + suite PostgreSQL hijau |
+| Signed-in browser QA | PENDING | 2026-08-20 | Perlu preview SHA final dan session Google asli |
 | Production deploy | NOT DEPLOYED | 2026-08-20 | Build live masih `5b5fbd4d3e34`; batch ini belum didorong |
 
 ## Known Issues dan Blocker
 
-- Host API/DB untuk project ref yang tersimpan lokal mengembalikan `NXDOMAIN`; pooler mengembalikan tenant/user tidak ditemukan. Ini konsisten dari aplikasi, test integrasi, test SQL, DNS publik, dan CLI.
-- Dashboard Supabase meminta login sehingga agent tidak bisa memastikan apakah project dihapus, pause, dipindah, atau credential lokal sudah basi.
-- Migration atomic sengaja abort bila menemukan legacy `scan_targets` tanpa ciphertext/HMAC. Data lama harus diinspeksi dan diputuskan secara sadar; migration tidak boleh menghapus atau mengarang ulang target diam-diam.
-- Karena database live belum di-migrate, push ke `main` berisiko membuat deployment memakai kontrak kode yang lebih baru daripada database.
+- CLI saat ini terautentikasi ke akun pemilik project duplikat dan sengaja tidak ditautkan. Operasi DB canonical harus memakai URL tervalidasi atau login akun lama.
+- Preview Vercel dilindungi SSO dan remote masih SHA lama; QA signed-in belum mewakili working tree final.
+- Production masih build lama. Jangan merge sebelum preview final membuktikan login → scan → hasil → settle/refund.
+- Free plan dapat pause saat lama tidak aktif dan tidak memberi backup otomatis; tetapkan strategi backup sebelum menerima data user nyata.
+- Docker Desktop tidak tersedia, jadi cache katalog/local reset Supabase CLI tidak jalan. Ini tidak memengaruhi migration/test remote yang sudah hijau.
 
 ## Next Safe Action
 
-1. Pulihkan atau relink project Supabase yang benar dan pastikan ref/API/DB bisa dijangkau. Ini satu-satunya bagian yang mungkin butuh login/otoritas Product Owner.
-2. Inspeksi legacy `scan_targets`; terminalisasi/bersihkan hanya data yang memang aman diubah.
-3. Terapkan migration berurutan:
-   - `20260820111139_secure_credit_ledger_functions.sql`
-   - `20260820111918_harden_credit_ledger_invariants.sql`
-   - `20260820112824_atomic_scan_workflow_boundary.sql`
-4. Jalankan `pnpm db:test`, `pnpm test:integrasi`, serta privilege/RLS probes sampai hijau penuh.
-5. Browser QA dengan akun asli pada HP + desktop: success, no-result/refund, insufficient credit, duplicate submit, tutup-buka browser, dan akses scan milik user lain.
-6. Setelah vertical slice terbukti live, lanjutkan Source Governor (budget, health, circuit breaker), lalu source berikutnya sesuai ROADMAP.
+1. Pastikan preview Vercel baru berasal dari SHA checkpoint dan env-nya tetap menunjuk project canonical lama.
+2. Browser QA akun asli pada HP + desktop: success, no-result/refund, insufficient credit, duplicate submit, tutup-buka browser, dan akses scan milik user lain.
+3. Buka/cek PR supaya GitHub Quality Gate berjalan; merge/deploy production hanya setelah preview hijau.
+4. Verifikasi production signed-in dan `/api/version`; observasi ledger/scan tanpa data fixture.
+5. Setelah production stabil, hapus project duplikat baru untuk membebaskan slot Free dan bersihkan credential bootstrap lokalnya.
+6. Lanjutkan Source Governor (budget, health, circuit breaker), lalu source berikutnya sesuai ROADMAP.
 
 ## Relevant Decisions
 
@@ -95,6 +105,7 @@
 - DEC-0122 — Workflow durable memakai Vercel Workflow + transactional outbox database.
 - DEC-0123 — Domain/RDAP dipoles dulu; no-result tidak pernah dianggap aman.
 - DEC-0124 — Harga, standar hasil, dan bonus pertama dibekukan atomik saat scan dibuat.
+- DEC-0125 — Project Supabase lama adalah canonical; duplikat baru hanya cadangan kosong sementara.
 
 ## Relevant Files
 
@@ -108,10 +119,14 @@
 - `supabase/migrations/20260820111139_secure_credit_ledger_functions.sql` — privilege hardening.
 - `supabase/migrations/20260820111918_harden_credit_ledger_invariants.sql` — invariant ledger.
 - `supabase/migrations/20260820112824_atomic_scan_workflow_boundary.sql` — atomic scan, outbox, worker RPC.
+- `supabase/migrations/20260820150210_lock_legacy_authenticated_rpcs.sql` — exact RPC allowlist lama.
+- `supabase/migrations/20260820150759_revoke_global_function_defaults.sql` — default ACL global + per-schema.
 - `supabase/tests/credit-function-privileges.sql` — privilege checks.
 - `supabase/tests/wallet-fefo-invariants.sql` — ledger checks.
 - `supabase/tests/scan-workflow-invariants.sql` — workflow boundary checks.
+- `supabase/tests/security-definer-privileges.sql` — exact allowlist dan probe default privilege.
+- `scripts/select-supabase-environment.ps1` — switch env canonical tanpa mencetak secret.
 
 ## Handoff Singkat
 
-Jangan deploy atau menandai Phase 7 selesai hanya dari build lokal. Kode lokal sudah jauh lebih aman daripada baseline, tapi bukti live baru sah setelah Supabase pulih, migration diterapkan, SQL suite hijau, dan flow signed-in dilihat berjalan.
+Saat user bilang `lanjut`, mulai dari preview SHA checkpoint + PR Quality Gate + signed-in QA di atas—jangan mengulang provisioning dan jangan push ke project duplikat. Database canonical sudah migrated dan terbukti hijau; Phase 7 tetap belum selesai sampai flow signed-in dilihat berjalan di preview lalu production.

@@ -334,3 +334,29 @@ begin
   return v_tx_id;
 end;
 $$;
+
+-- SECURITY DEFINER ledger RPC harus tertutup pada migration yang sama dengan
+-- pembuatannya. Jangan bergantung pada migration hardening berikutnya: bila
+-- replay berhenti di tengah, anon/authenticated tetap tidak boleh menyentuh
+-- saldo atau hold kredit.
+revoke all on function public.grant_credits(
+  uuid, integer, integer, public.origin_type, text, timestamptz, text, text
+) from public, anon, authenticated;
+grant execute on function public.grant_credits(
+  uuid, integer, integer, public.origin_type, text, timestamptz, text, text
+) to service_role;
+
+revoke all on function public.reserve_scan_credits(uuid, uuid, uuid, text)
+  from public, anon, authenticated;
+grant execute on function public.reserve_scan_credits(uuid, uuid, uuid, text)
+  to service_role;
+
+revoke all on function public.settle_scan_credits(uuid, integer, text)
+  from public, anon, authenticated;
+grant execute on function public.settle_scan_credits(uuid, integer, text)
+  to service_role;
+
+revoke all on function public.release_scan_credits(uuid, text)
+  from public, anon, authenticated;
+grant execute on function public.release_scan_credits(uuid, text)
+  to service_role;

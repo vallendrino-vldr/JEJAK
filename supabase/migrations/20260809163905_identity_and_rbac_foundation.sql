@@ -19,6 +19,30 @@ revoke all on schema app from anon;
 revoke all on schema app from authenticated;
 grant usage on schema app to authenticated;
 
+-- Proyek Supabase baru masih bisa membawa default privilege Data API yang
+-- permisif untuk object yang dibuat oleh role postgres. Kunci default-nya
+-- sebelum migration ini membuat tabel, sequence, atau function pertama.
+-- Akses client dibuka kembali secara eksplisit per-object setelah RLS siap.
+-- Global REVOKE wajib ada: REVOKE per-schema tidak dapat membatalkan default
+-- global PostgreSQL (termasuk EXECUTE bawaan PUBLIC pada function baru).
+alter default privileges for role postgres
+  revoke all on tables from anon, authenticated;
+
+alter default privileges for role postgres
+  revoke all on sequences from anon, authenticated;
+
+alter default privileges for role postgres
+  revoke all on functions from public, anon, authenticated;
+
+alter default privileges for role postgres in schema public
+  revoke all on tables from anon, authenticated;
+
+alter default privileges for role postgres in schema public
+  revoke all on sequences from anon, authenticated;
+
+alter default privileges for role postgres in schema public
+  revoke all on functions from public, anon, authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Enum
 -- ---------------------------------------------------------------------------

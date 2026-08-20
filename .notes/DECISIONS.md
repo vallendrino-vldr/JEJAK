@@ -3318,6 +3318,36 @@ Tidak ada.
 
 ---
 
+## DEC-0125 — Project Supabase lama adalah canonical; duplikat baru hanya cadangan kosong sementara
+
+**Status:** AKTIF
+
+**Phase:** 7 / Operasional
+
+**Tanggal:** 2026-08-20
+
+### Masalah
+Project JEJAK lama sempat pause dan berada di akun Supabase lain, sehingga sebuah project JEJAK baru dibuat. Setelah project lama dipulihkan, ada dua target yang sama-sama terlihat valid tetapi hanya satu boleh menjadi sumber kebenaran production.
+
+### Keputusan
+Project lama `tauyicvfhpfnohhgccvn` menjadi canonical. Project baru `gzmtzdvxerpvetfmqale` tidak menerima migration/data dan hanya dipertahankan sebagai cadangan kosong sampai preview dan production signed-in QA stabil. Project ini **bukan** rollback target siap pakai karena belum memiliki schema, data, OAuth, atau konfigurasi production. Setelah itu project duplikat dihapus untuk membebaskan slot Free.
+
+CLI lokal tidak boleh dibiarkan tertaut ke duplikat. Tool test database wajib mencocokkan ref DB URL/link dengan ref canonical di `.env.local` dan gagal tertutup bila target tidak dapat dibuktikan.
+
+### Alasan
+Production OAuth sudah menunjuk project lama. Project itu juga membawa user Owner, Google identity, bucket private, Vault secret identifier, dan riwayat migration. Memindahkannya ke project baru menambah risiko login putus, key salah, atau data/security state terbelah tanpa memberi manfaat produk.
+
+### Dampak
+Semua migration Phase 7 dan hardening privilege diterapkan ke project lama. Project baru tidak boleh dipakai oleh app, test, atau deploy. Penghapusan duplikat ditunda sampai rollback value-nya benar-benar nol setelah QA production.
+
+### Blueprint terkait
+`.notes/STATUS_PROJECT.md`, `docs/ENVIRONMENT_CONTRACT.md`, migration head `20260820150759`
+
+### Menggantikan
+Tidak ada.
+
+---
+
 # 5. KEPUTUSAN YANG WAJIB DIBUAT SAAT IMPLEMENTASI BILA RELEVAN
 
 Saat Agent benar-benar menjalankan project, keputusan berikut belum boleh diasumsikan dan harus dicatat jika significant:

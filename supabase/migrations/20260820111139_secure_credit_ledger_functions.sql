@@ -2,6 +2,27 @@
 -- EXECUTE bawaan untuk PUBLIC. Tanpa revoke eksplisit, anon/authenticated dapat
 -- memanggil mutasi saldo langsung dan melewati RLS tabel.
 
+-- Project lama membawa default privilege Data API yang permisif. Tutup default
+-- untuk semua object public yang dibuat sesudah migration ini; akses client
+-- harus selalu dibuka eksplisit setelah RLS/policy siap.
+alter default privileges for role postgres
+  revoke all on tables from anon, authenticated;
+
+alter default privileges for role postgres
+  revoke all on sequences from anon, authenticated;
+
+alter default privileges for role postgres
+  revoke all on functions from public, anon, authenticated;
+
+alter default privileges for role postgres in schema public
+  revoke all on tables from anon, authenticated;
+
+alter default privileges for role postgres in schema public
+  revoke all on sequences from anon, authenticated;
+
+alter default privileges for role postgres in schema public
+  revoke all on functions from public, anon, authenticated;
+
 revoke all on function public.grant_credits(
   uuid, integer, integer, public.origin_type, text, timestamptz, text, text
 ) from public, anon, authenticated;

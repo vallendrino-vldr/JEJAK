@@ -19,10 +19,22 @@ declare
   jumlah integer;
   minimum_snapshot integer;
   status_job text;
+  hak_outbox text;
   tersedia integer;
   dicadangkan integer;
   ditolak boolean := false;
 begin
+  foreach hak_outbox in array array[
+    'select', 'insert', 'update', 'delete', 'truncate', 'references', 'trigger'
+  ]
+  loop
+    if has_table_privilege('authenticated', 'public.scan_dispatch_jobs', hak_outbox)
+      or has_table_privilege('anon', 'public.scan_dispatch_jobs', hak_outbox)
+    then
+      raise exception 'GAGAL 0: Outbox dispatch punya privilege client %', hak_outbox;
+    end if;
+  end loop;
+
   insert into auth.users (id, email)
   values (id_user, 'uji-scan-workflow@contoh.test');
 
@@ -56,12 +68,19 @@ begin
     raise exception 'GAGAL 1A: Minimum deliverable tidak disnapshot ke quote';
   end if;
 
+  -- Outbox memang private dari authenticated. Inspeksi invariant internal
+  -- dilakukan sebagai runner test, lalu role user dipasang lagi untuk menguji
+  -- idempotency dan penolakan worker boundary.
+  execute 'reset role';
+
   select status into status_job
   from public.scan_dispatch_jobs
   where scan_id = id_scan;
   if status_job <> 'pending' then
     raise exception 'GAGAL 1B: Outbox scan tidak dibuat atomik';
   end if;
+
+  execute 'set local role authenticated';
 
   select scan_id into id_scan_retry
   from public.mulai_scan(
