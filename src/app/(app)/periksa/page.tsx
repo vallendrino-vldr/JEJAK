@@ -121,8 +121,48 @@ export default async function PeriksaPage({
                 </div>
                 {username.githubUrl ? (
                   <div>
-                    <dt>Profil</dt>
+                    <dt>Profil GitHub</dt>
                     <dd>{username.githubUrl}</dd>
+                  </div>
+                ) : null}
+                {username.githubNama ? (
+                  <div>
+                    <dt>Nama di GitHub</dt>
+                    <dd>{username.githubNama}</dd>
+                  </div>
+                ) : null}
+                {username.githubRepo !== null ? (
+                  <div>
+                    <dt>Repositori publik</dt>
+                    <dd>{username.githubRepo}</dd>
+                  </div>
+                ) : null}
+                {username.githubPengikut !== null ? (
+                  <div>
+                    <dt>Pengikut</dt>
+                    <dd>{username.githubPengikut}</dd>
+                  </div>
+                ) : null}
+                {username.githubSejak ? (
+                  <div>
+                    <dt>Akun sejak</dt>
+                    <dd>{username.githubSejak}</dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt>GitLab</dt>
+                  <dd>
+                    {username.gitlab === null
+                      ? "Belum bisa dipastikan"
+                      : username.gitlab
+                        ? "Ada"
+                        : "Tidak ditemukan"}
+                  </dd>
+                </div>
+                {username.gitlabUrl ? (
+                  <div>
+                    <dt>Profil GitLab</dt>
+                    <dd>{username.gitlabUrl}</dd>
                   </div>
                 ) : null}
               </dl>
