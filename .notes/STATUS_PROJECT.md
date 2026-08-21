@@ -9,7 +9,7 @@
 | Project | JEJAK — alat pemeriksaan jejak digital berbasis bukti |
 | Domain produksi | `https://www.cekjejak.my.id` |
 | Mode sesi | RESUME |
-| Current Phase | 7 scan-domain · 10 admin (4 view) · 12 hapus+pulihkan kasus · 13 PWA install — semua live |
+| Current Phase | Periksa 4/5 tipe live · 10 admin (4 view) · 12 hapus/pulihkan kasus · 13 PWA install — semua live |
 | Current Milestone | Vertical slice Domain + RDAP yang durable, aman, dan refundable |
 | Current Branch | `codex/phase7-domain-rdap-hardening` |
 | Baseline Commit | `f996117` — `feat(scan): implement RDAP vertical slice with evidence wiring and settlement` |
@@ -89,11 +89,12 @@
 
 - Phase 10 Ruang Kendali (owner-only, read-only): Ringkasan, Pengguna (email termasker), Pemeriksaan, Sumber.
 - Phase 12: hapus kasus ke sampah (reversibel 3 hari) + halaman Sampah + pulihkan.
-- Phase 13: manifest PWA + ikon JEJAK (installable). Service worker + Version Sentinel BELUM (Phase 13 penuh).
+- Phase 13: manifest PWA + ikon JEJAK (installable). Service worker + Version Sentinel BELUM.
+- Periksa: domain = scan penuh berbayar (RDAP). Nomor HP (libphonenumber), email (format+MX), username (GitHub API) = cek instan GRATIS di luar pipeline kredit (server-side, timeout, bukan SSRF). Nama = tetap ambigu (blueprint). Ini preview, bukan scan berbukti.
 
 ## Belum (butuh sesi fokus, jangan difragmentasi)
 
-- Tipe scan selain domain (email/phone/username/nama) — butuh adapter + wiring pipeline durable + scan_products; menyangkut kredit, jadi harus dibangun utuh, bukan sepotong.
+- Menjadikan cek instan HP/email/username sebagai scan BERBUKTI berbayar (masuk pipeline durable + Evidence Passport): butuh adapter + wiring + scan_products; menyangkut kredit, bangun utuh. Workflow saat ini FatalError untuk non-domain (src/workflows/scan.ts) — wajib diperluas dulu.
 - Phase 8: halaman hasil + analisa AI (Gemini/Groq) dengan Context Pack + grounding.
 - Phase 9: top-up + pembayaran manual (uang — hati-hati, atomic settlement).
 - Phase 11 Partner, 14 Observability/NADI, 15 Security hardening, 16 QA, 17-18 rilis.
