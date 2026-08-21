@@ -9,6 +9,11 @@ describe("validasi telepon", () => {
     expect(r.format).toContain("+62");
   });
 
+  it("menebak penerbit awal dari prefix (0813 = Telkomsel)", () => {
+    expect(validasiTelepon("081320014968").operatorAwal).toBe("Telkomsel");
+    expect(validasiTelepon("081712345678").operatorAwal).toBe("XL");
+  });
+
   it("menormalkan format internasional", () => {
     expect(validasiTelepon("+628123456789").wilayah).toBe("Indonesia");
   });

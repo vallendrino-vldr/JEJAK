@@ -175,8 +175,20 @@ export default async function PeriksaPage({
                 </div>
                 {telepon.format ? (
                   <div>
-                    <dt>Ditulis rapi</dt>
+                    <dt>Format internasional</dt>
                     <dd>{telepon.format}</dd>
+                  </div>
+                ) : null}
+                {telepon.formatNasional ? (
+                  <div>
+                    <dt>Format lokal</dt>
+                    <dd>{telepon.formatNasional}</dd>
+                  </div>
+                ) : null}
+                {telepon.operatorAwal ? (
+                  <div>
+                    <dt>Penerbit awal</dt>
+                    <dd>{telepon.operatorAwal} · bisa sudah pindah</dd>
                   </div>
                 ) : null}
                 {telepon.wilayah ? (
