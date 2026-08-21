@@ -1,5 +1,8 @@
 # STATUS PROJECT — JEJAK
 
+> **AGENT BARU: baca `.notes/HANDOFF.md` DULU** — itu titik masuk lengkap (status, ops deploy, cara migration, yang belum, larangan). File ini cuma snapshot ringkas.
+
+
 > Snapshot operasional lintas-agent. History ada di Git; file ini hanya memuat keadaan sekarang.
 
 ## Snapshot
