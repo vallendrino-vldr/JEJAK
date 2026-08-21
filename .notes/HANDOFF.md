@@ -92,7 +92,7 @@ Untuk `pnpm db:test`: set `JEJAK_DB_URL` = URL pooler di atas dulu (scriptnya se
 
 ---
 
-## 5. STATUS PER FITUR (per 2026-08-21, commit `4e0c1ba`, migration head `20260821090000`)
+## 5. STATUS PER FITUR (per 2026-08-22, commit `bfdae3d`, migration head `20260821130000`)
 
 Empat tingkat: **acceptance-proven** (ada test) · **production-functional** (jalan, teruji manual) · **wired** (nyambung, belum diuji tuntas) · **belum**.
 
@@ -111,7 +111,7 @@ Empat tingkat: **acceptance-proven** (ada test) · **production-functional** (ja
 | Ruang Kendali (admin) | production-functional | Ringkasan/Pengguna/Pemeriksaan/Sumber — owner-only, read-only |
 | PWA install (manifest + ikon) | production-functional | installable. **Service worker + Version Sentinel BELUM** |
 | **Analisa AI (Phase 8)** | wired | Analis DOMAIN jalan: bagian "Analisa" di `/periksa/[ref]` (scan completed) baca RDAP → ringkasan+observasi via Groq `openai/gpt-oss-20b` primary / Gemini `gemini-3.5-flash-lite` failover (~1.5s, keduanya smoke vs data RDAP asli), grounded + fallback rule-based, DI LUAR jalur kredit (route read-only RLS). Teruji: provider live + logika unit + gate hijau + analisa jalan vs data google.com asli. Skeptic/korelasi/graph/asisten belum. Cache: Next Data Cache (`unstable_cache`) 1 jam per-scan. DEC-0127. |
-| **Pembayaran/top-up (Phase 9)** | sedang jalan | Slice A DONE: `credit_packages` (katalog paket + RLS + seed 4, migration `20260821090000`, test lulus). BELUM: payment_methods (rekening, perlu enkripsi Vault), topup_orders + checkout, upload bukti + storage, Payment Sentinel, approval atomik. Urut di §9B. |
+| **Pembayaran/top-up (Phase 9)** | backend DONE, UI belum | **Backend jalur uang komplit + teruji** (migration 090000-130000, 5 suite SQL): `credit_packages` (A, seed 4) → `payment_methods` rekening terenkripsi + `simpan_rekening`/`daftar_rekening_kendali` (B) → `topup_orders` + `buat_order_topup` jumlah unik idempoten (C) → `payment_proofs` + `submit_proof` (D) → `payment_reviews` + `approve_topup` ATOMIK idempoten (double-click=1 settlement, grant via grant_credits) + `reject_topup` (F). BELUM: UI user top-up + upload bukti nyata (storage) + UI admin review; Payment Sentinel (AI screening) sengaja ditunda (enhancement). |
 | Partner (11), Observability/NADI (14), Security hardening (15), QA (16), Rilis (17-18) | belum | |
 
 CI GitHub Actions "Quality Gate" HIJAU di `main`.
