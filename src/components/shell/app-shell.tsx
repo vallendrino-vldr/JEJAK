@@ -11,7 +11,6 @@ import {
   IkonKasus,
   IkonKembali,
   IkonPeriksa,
-  IkonRuangKendali,
   IkonSegarkan,
   IkonTutup,
 } from "@/components/ikon";
@@ -57,7 +56,6 @@ export function AppShell({
   const [menyegarkan, setMenyegarkan] = useState(false);
 
   const diBerandaUtama = pathname === "/beranda";
-  const bisaKeRuangKendali = sesi.peran.includes("owner") || sesi.peran.includes("admin");
 
   const tutupPanel = useCallback(() => setPanel(null), []);
 
@@ -89,7 +87,12 @@ export function AppShell({
           {diBerandaUtama ? (
             <Wordmark ukuran="kecil" />
           ) : (
-            <button type="button" className="kontrol" onClick={() => router.back()}>
+            <button
+              type="button"
+              className="kontrol"
+              onClick={() => router.back()}
+              aria-label="Kembali"
+            >
               <IkonKembali />
               <span className="kontrol-teks">Kembali</span>
             </button>
@@ -115,6 +118,7 @@ export function AppShell({
             className="kontrol"
             onClick={() => setPanel("dompet")}
             aria-expanded={panel === "dompet"}
+            aria-label="Dompet"
           >
             <IkonDompet />
             <span className="kontrol-teks">Dompet</span>
@@ -145,13 +149,6 @@ export function AppShell({
             <span>{label}</span>
           </Link>
         ))}
-
-        {bisaKeRuangKendali ? (
-          <Link href="/ruang-kendali" className="nav-item nav-item-kendali" onClick={tutupPanel}>
-            <IkonRuangKendali />
-            <span>Ruang Kendali</span>
-          </Link>
-        ) : null}
       </nav>
 
       <main className="shell-workspace gulir" id="workspace">

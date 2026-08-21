@@ -12,9 +12,16 @@ declare
   lot_2 uuid;
   produk_id uuid;
   quote_id uuid;
+  quote_id_2 uuid;
   kasus_id uuid;
   scan_id uuid;
+  scan_id_2 uuid;
   hold_id uuid;
+  hold_id_retry uuid;
+  tx_id uuid;
+  tx_id_retry uuid;
+  kedaluwarsa_1 timestamptz := now() + interval '1 day';
+  kedaluwarsa_2 timestamptz := now() + interval '2 days';
   saldo int;
   tersisa int;
   dicadangkan int;
@@ -64,15 +71,19 @@ begin
 
   -- 4. Grant Credits (Admin)
   -- Lot 1: 5 credits, kedaluwarsa besok (FEFO pertama)
-  perform public.grant_credits(dompet_a, 5, 0, 'admin_grant', null, now() + interval '1 day', 'test', 'grant_1');
+  tx_id := public.grant_credits(dompet_a, 5, 0, 'admin_grant', null, kedaluwarsa_1, 'test', 'grant_1');
+  tx_id_retry := public.grant_credits(dompet_a, 5, 0, 'admin_grant', null, kedaluwarsa_1, 'test', 'grant_1');
+  if tx_id_retry <> tx_id then raise exception 'GAGAL 4A: Retry grant membuat transaksi baru'; end if;
   -- Lot 2: 15 credits, kedaluwarsa lusa (FEFO kedua)
-  perform public.grant_credits(dompet_a, 15, 0, 'admin_grant', null, now() + interval '2 days', 'test', 'grant_2');
+  perform public.grant_credits(dompet_a, 15, 0, 'admin_grant', null, kedaluwarsa_2, 'test', 'grant_2');
 
   select available_cached into saldo from public.credit_wallets where id = dompet_a;
   if saldo <> 20 then raise exception 'GAGAL 4: Saldo total bukan 20, tapi %', saldo; end if;
 
   -- 5. Reserve Credits (Harusnya berhasil & pakai Lot 1 duluan)
   hold_id := public.reserve_scan_credits(id_a, scan_id, quote_id, 'res_idemp_1');
+  hold_id_retry := public.reserve_scan_credits(id_a, scan_id, quote_id, 'res_idemp_1');
+  if hold_id_retry <> hold_id then raise exception 'GAGAL 5A: Retry reserve membuat hold baru'; end if;
 
   select available_cached, reserved_cached into saldo, dicadangkan from public.credit_wallets where id = dompet_a;
   if saldo <> 10 or dicadangkan <> 10 then raise exception 'GAGAL 5: Saldo available % reserved % tidak sesuai', saldo, dicadangkan; end if;
@@ -86,22 +97,64 @@ begin
   select reserved_credits into dicadangkan from public.credit_lots where wallet_id = dompet_a order by expires_at desc limit 1;
   if dicadangkan <> 5 then raise exception 'GAGAL 7: Lot 2 tidak ditarik sebagian, reserved: %', dicadangkan; end if;
 
-  -- 6. Settle Scan (Partial Cost: bayar 8 dari 10 reserve)
-  perform public.settle_scan_credits(scan_id, 8, 'set_idemp_1');
+  -- 6. Biaya negatif wajib ditolak tanpa mengubah saldo.
+  berhasil := true;
+  begin
+    perform public.settle_scan_credits(scan_id, -1, 'set_negatif_1');
+  exception
+    when others then berhasil := false;
+  end;
+  if berhasil then raise exception 'GAGAL 8: Settle negatif diterima'; end if;
+
+  select available_cached, reserved_cached into saldo, dicadangkan
+  from public.credit_wallets where id = dompet_a;
+  if saldo <> 10 or dicadangkan <> 10 then
+    raise exception 'GAGAL 8A: Penolakan settle negatif mengubah saldo';
+  end if;
+
+  -- 7. Settle Scan (Partial Cost: bayar 8 dari 10 reserve)
+  tx_id := public.settle_scan_credits(scan_id, 8, 'set_idemp_1');
+  tx_id_retry := public.settle_scan_credits(scan_id, 8, 'set_idemp_retry_1');
+  if tx_id_retry <> tx_id then raise exception 'GAGAL 8B: Retry settle membuat transaksi baru'; end if;
 
   select available_cached, reserved_cached into saldo, dicadangkan from public.credit_wallets where id = dompet_a;
-  if saldo <> 12 or dicadangkan <> 0 then raise exception 'GAGAL 8: Settle salah hitung sisa saldo (10 - 8 = 2, total available 10+2 = 12). Dapat: available %, reserved %', saldo, dicadangkan; end if;
+  if saldo <> 12 or dicadangkan <> 0 then raise exception 'GAGAL 9: Settle salah hitung sisa saldo (10 - 8 = 2, total available 10+2 = 12). Dapat: available %, reserved %', saldo, dicadangkan; end if;
 
   -- Cek alokasi FEFO setelah Settle
   -- Lot 1 (5) harus terpakai 5, remaining jadi 0 (5 - 5), status exhausted.
   select remaining_credits, status into tersisa, tersamar from public.credit_lots where wallet_id = dompet_a order by expires_at asc limit 1;
-  if tersisa <> 0 or tersamar <> 'exhausted' then raise exception 'GAGAL 9: Lot 1 settle salah. Tersisa: %, Status: %', tersisa, tersamar; end if;
+  if tersisa <> 0 or tersamar <> 'exhausted' then raise exception 'GAGAL 10: Lot 1 settle salah. Tersisa: %, Status: %', tersisa, tersamar; end if;
 
   -- Lot 2 (15) harus terpakai 3, remaining jadi 12 (15 - 3), status active.
   select remaining_credits, status into tersisa, tersamar from public.credit_lots where wallet_id = dompet_a order by expires_at desc limit 1;
-  if tersisa <> 12 or tersamar <> 'active' then raise exception 'GAGAL 10: Lot 2 settle salah. Tersisa: %, Status: %', tersisa, tersamar; end if;
+  if tersisa <> 12 or tersamar <> 'active' then raise exception 'GAGAL 11: Lot 2 settle salah. Tersisa: %, Status: %', tersisa, tersamar; end if;
 
-  -- 7. Bersihkan
+  -- 8. Release juga idempotent dan tidak boleh mencetak saldo saat retry.
+  insert into public.scan_quotes (
+    user_id, case_id, scan_product_id, quoted_credit_cost,
+    final_credit_cost, config_version, expires_at
+  ) values (
+    id_a, kasus_id, produk_id, 10, 10, 1, now() + interval '1 day'
+  ) returning id into quote_id_2;
+
+  insert into public.scans (
+    user_id, case_id, purpose, product_code, quote_id, idempotency_key
+  ) values (
+    id_a, kasus_id, 'fraud_check', 'TEST_SCAN', quote_id_2, 'scn_idemp_2'
+  ) returning id into scan_id_2;
+
+  perform public.reserve_scan_credits(id_a, scan_id_2, quote_id_2, 'res_idemp_2');
+  tx_id := public.release_scan_credits(scan_id_2, 'rel_idemp_2');
+  tx_id_retry := public.release_scan_credits(scan_id_2, 'rel_idemp_retry_2');
+  if tx_id_retry <> tx_id then raise exception 'GAGAL 12: Retry release membuat transaksi baru'; end if;
+
+  select available_cached, reserved_cached into saldo, dicadangkan
+  from public.credit_wallets where id = dompet_a;
+  if saldo <> 12 or dicadangkan <> 0 then
+    raise exception 'GAGAL 13: Release/retry mengubah saldo salah: available %, reserved %', saldo, dicadangkan;
+  end if;
+
+  -- 9. Bersihkan
   delete from auth.users where id = id_a;
   delete from public.scan_products where code = 'TEST_SCAN';
 

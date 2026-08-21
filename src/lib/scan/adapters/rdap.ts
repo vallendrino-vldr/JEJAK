@@ -1,4 +1,79 @@
-import { createSupabaseServerClient } from "../../supabase/server";
+import { assertPublicHttpsUrl } from "@/lib/security/public-network";
+
+const MAX_RESPONSE_BYTES = 1_000_000;
+const MAX_REDIRECTS = 3;
+
+export type RdapFacts = {
+  handle?: string;
+  statuses: string[];
+  events: Array<{ action: string; date: string }>;
+  nameservers: string[];
+  registrar?: string;
+  registrantName?: string;
+  registrantOrganization?: string;
+  delegationSigned?: boolean;
+};
+
+export type RdapFetchResult = { status: "success"; facts: RdapFacts } | { status: "no_result" };
+
+export class RdapAdapterError extends Error {
+  readonly code: string;
+  readonly retryable: boolean;
+  readonly retryAfterMs?: number;
+
+  constructor(code: string, retryable: boolean, retryAfterMs?: number) {
+    super(code);
+    this.name = "RdapAdapterError";
+    this.code = code;
+    this.retryable = retryable;
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function stringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map(asString).filter((item): item is string => Boolean(item)))];
+}
+
+function vcardValue(entity: Record<string, unknown>, field: string): string | undefined {
+  if (!Array.isArray(entity.vcardArray) || !Array.isArray(entity.vcardArray[1])) return undefined;
+
+  for (const property of entity.vcardArray[1]) {
+    if (!Array.isArray(property) || property[0] !== field) continue;
+    return asString(property[3]);
+  }
+
+  return undefined;
+}
+
+function entityWithRole(raw: unknown, role: string): Record<string, unknown> | undefined {
+  if (!Array.isArray(raw)) return undefined;
+
+  return raw
+    .map(asRecord)
+    .filter((entity): entity is Record<string, unknown> => entity !== null)
+    .find((entity) => stringArray(entity.roles).includes(role));
+}
+
+function parseRetryAfter(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, 15 * 60_000);
+
+  const date = Date.parse(value);
+  if (!Number.isNaN(date)) return Math.max(0, Math.min(date - Date.now(), 15 * 60_000));
+  return undefined;
+}
 
 export class RDAPAdapter {
   supports(targetType: string): boolean {
@@ -6,164 +81,154 @@ export class RDAPAdapter {
   }
 
   validate(target: string): boolean {
-    // Basic domain validation
-    return /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(target);
+    return (
+      target.length <= 253 &&
+      /^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+([a-z]{2,63}|xn--[a-z0-9-]{2,59})$/i.test(target)
+    );
   }
 
-  async fetch(target: string): Promise<unknown> {
+  normalize(rawResult: unknown): RdapFacts | null {
+    const raw = asRecord(rawResult);
+    if (!raw) return null;
+
+    const events = Array.isArray(raw.events)
+      ? raw.events
+          .map(asRecord)
+          .filter((event): event is Record<string, unknown> => event !== null)
+          .map((event) => ({
+            action: asString(event.eventAction),
+            date: asString(event.eventDate),
+          }))
+          .filter((event): event is { action: string; date: string } =>
+            Boolean(event.action && event.date),
+          )
+      : [];
+
+    const nameservers = Array.isArray(raw.nameservers)
+      ? raw.nameservers
+          .map(asRecord)
+          .filter((item): item is Record<string, unknown> => item !== null)
+          .map((item) => asString(item.ldhName)?.toLowerCase())
+          .filter((item): item is string => Boolean(item))
+      : [];
+
+    const registrant = entityWithRole(raw.entities, "registrant");
+    const registrar = entityWithRole(raw.entities, "registrar");
+    const secureDns = asRecord(raw.secureDNS);
+
+    const facts: RdapFacts = {
+      handle: asString(raw.handle),
+      statuses: stringArray(raw.status),
+      events,
+      nameservers: [...new Set(nameservers)],
+      registrar: registrar
+        ? (vcardValue(registrar, "org") ?? vcardValue(registrar, "fn"))
+        : undefined,
+      registrantName: registrant ? vcardValue(registrant, "fn") : undefined,
+      registrantOrganization: registrant ? vcardValue(registrant, "org") : undefined,
+      delegationSigned:
+        typeof secureDns?.delegationSigned === "boolean" ? secureDns.delegationSigned : undefined,
+    };
+
+    const meaningful = Boolean(
+      facts.handle ||
+      facts.statuses.length ||
+      facts.events.length ||
+      facts.nameservers.length ||
+      facts.registrar,
+    );
+
+    return meaningful ? facts : null;
+  }
+
+  async fetch(target: string, timeoutMs = 8000): Promise<RdapFetchResult> {
+    const normalizedTarget = target.trim().toLowerCase();
+    if (!this.validate(normalizedTarget)) {
+      throw new RdapAdapterError("invalid_target", false);
+    }
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s bounded timeout
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    let currentUrl = new URL(`https://rdap.org/domain/${encodeURIComponent(normalizedTarget)}`);
 
     try {
-      const response = await fetch(`https://rdap.org/domain/${target}`, {
-        signal: controller.signal,
-        headers: {
-          Accept: "application/rdap+json",
-        },
-      });
+      for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
+        try {
+          await assertPublicHttpsUrl(currentUrl);
+        } catch (error) {
+          if (error instanceof Error && error.message.startsWith("blocked_url_")) {
+            throw new RdapAdapterError("destination_rejected", false);
+          }
+          throw new RdapAdapterError("network_error", true, 2000);
+        }
 
-      if (!response.ok) {
-        if (response.status === 404) return null; // no_result
-        if (response.status === 429) throw new Error("rate_limited");
-        throw new Error(`HTTP ${response.status}`);
+        let response: Response;
+        try {
+          response = await fetch(currentUrl, {
+            signal: controller.signal,
+            redirect: "manual",
+            headers: {
+              Accept: "application/rdap+json, application/json;q=0.9",
+              "User-Agent": "JEJAK-RDAP/1.0",
+            },
+          });
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            throw new RdapAdapterError("timeout", true, 2000);
+          }
+          if (error instanceof RdapAdapterError) throw error;
+          throw new RdapAdapterError("network_error", true, 2000);
+        }
+
+        if (response.status >= 300 && response.status < 400) {
+          const location = response.headers.get("location");
+          if (!location || redirectCount === MAX_REDIRECTS) {
+            throw new RdapAdapterError("redirect_rejected", false);
+          }
+          currentUrl = new URL(location, currentUrl);
+          continue;
+        }
+
+        if (response.status === 404) return { status: "no_result" };
+        if (response.status === 429) {
+          throw new RdapAdapterError(
+            "rate_limited",
+            true,
+            parseRetryAfter(response.headers.get("retry-after")),
+          );
+        }
+        if (response.status >= 500) {
+          throw new RdapAdapterError("upstream_unavailable", true, 3000);
+        }
+        if (!response.ok) {
+          throw new RdapAdapterError("upstream_rejected", false);
+        }
+
+        const announcedLength = Number(response.headers.get("content-length") ?? "0");
+        if (announcedLength > MAX_RESPONSE_BYTES) {
+          throw new RdapAdapterError("response_too_large", false);
+        }
+
+        const body = await response.text();
+        if (new TextEncoder().encode(body).byteLength > MAX_RESPONSE_BYTES) {
+          throw new RdapAdapterError("response_too_large", false);
+        }
+
+        let raw: unknown;
+        try {
+          raw = JSON.parse(body);
+        } catch {
+          throw new RdapAdapterError("malformed_response", false);
+        }
+
+        const facts = this.normalize(raw);
+        if (!facts) throw new RdapAdapterError("empty_response", false);
+        return { status: "success", facts };
       }
 
-      return await response.json();
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name === "AbortError") {
-        throw new Error("timeout");
-      }
-      throw e;
+      throw new RdapAdapterError("redirect_rejected", false);
     } finally {
       clearTimeout(timeoutId);
     }
-  }
-
-  normalize(rawResult: unknown): unknown {
-    if (!rawResult || typeof rawResult !== "object") return null;
-    const raw = rawResult as Record<string, unknown>;
-
-    // Extract minimal facts as requested by Evidence Passport contract
-    const facts: Record<string, unknown> = {
-      handle: raw.handle,
-      status: raw.status || [],
-    };
-
-    if (Array.isArray(raw.events)) {
-      const registration = raw.events.find(
-        (e: Record<string, unknown>) => e.eventAction === "registration",
-      );
-      if (registration) facts.registered_at = registration.eventDate;
-
-      const expiration = raw.events.find(
-        (e: Record<string, unknown>) => e.eventAction === "expiration",
-      );
-      if (expiration) facts.expires_at = expiration.eventDate;
-    }
-
-    if (Array.isArray(raw.entities)) {
-      const registrant = raw.entities.find((e: Record<string, unknown>) => {
-        const roles = e.roles;
-        return Array.isArray(roles) && roles.includes("registrant");
-      });
-
-      if (registrant && Array.isArray(registrant.vcardArray) && registrant.vcardArray.length > 1) {
-        const vcardProps = registrant.vcardArray[1];
-        if (Array.isArray(vcardProps)) {
-          const nameProp = vcardProps.find((p: unknown[]) => p[0] === "fn");
-          const orgProp = vcardProps.find((p: unknown[]) => p[0] === "org");
-
-          facts.registrant_name = nameProp ? nameProp[3] : undefined;
-          facts.registrant_org = orgProp ? orgProp[3] : undefined;
-        }
-      }
-    }
-
-    return facts;
-  }
-
-  classifyResult(
-    normalized: unknown,
-  ): "success" | "no_result" | "timeout" | "malformed" | "rate_limited" | "blocked" {
-    if (normalized === "timeout") return "timeout";
-    if (normalized === "rate_limited") return "rate_limited";
-    if (normalized === "malformed") return "malformed";
-    if (!normalized) return "no_result";
-    return "success";
-  }
-
-  async health(): Promise<boolean> {
-    try {
-      const res = await fetch("https://rdap.org/domain/example.com", {
-        method: "HEAD",
-        headers: { Accept: "application/rdap+json" },
-      });
-      return res.ok;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Execute the adapter logic for a target and write to Evidence Passport.
-   */
-  async execute(
-    runId: string,
-    _scanId: string,
-    _targetType: string,
-    displayValue: string,
-    userId: string,
-    caseId?: string,
-  ) {
-    const supabase = await createSupabaseServerClient();
-
-    let status = "success";
-    let rawResult = null;
-    let normalized: unknown = null;
-
-    if (!this.validate(displayValue)) {
-      status = "malformed";
-    } else {
-      try {
-        rawResult = await this.fetch(displayValue);
-        normalized = this.normalize(rawResult);
-        status = this.classifyResult(normalized);
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "unknown";
-        if (msg === "timeout") status = "timeout";
-        else if (msg === "rate_limited") status = "rate_limited";
-        else status = "malformed"; // map unexpected to malformed for isolation
-      }
-    }
-
-    // 1. Update source run record
-    await supabase
-      .from("scan_source_runs")
-      .update({
-        status: status === "success" || status === "no_result" ? "completed" : "failed",
-        error_details: status !== "success" && status !== "no_result" ? { code: status } : null,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", runId);
-
-    // 2. Wire Result ke Evidence Passport (hanya jika ada hasil sukses dan caseId ada)
-    if (status === "success" && normalized && caseId) {
-      const evidencePayload = {
-        case_id: caseId,
-        evidence_class: "verified_fact",
-        source_kind: "rdap",
-        source_locator: `https://rdap.org/domain/${displayValue}`,
-        reliability: "high",
-        summary: `Catatan pendaftaran domain ${displayValue} ditemukan.`,
-        detail: normalized,
-        reverifiable: true,
-        created_by_kind: "system", // Or omit if system is not in actor_kind, let's use 'user' and created_by user
-        created_by: userId,
-      };
-
-      await supabase.from("case_evidence").insert(evidencePayload);
-    }
-
-    return status;
   }
 }
