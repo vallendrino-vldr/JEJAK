@@ -4,6 +4,7 @@ import { FormMulaiScan } from "@/components/periksa/form-mulai-scan";
 import { SearchConsole } from "@/components/periksa/search-console";
 import { deteksiIdentifier, type JenisIdentifier } from "@/lib/periksa/deteksi";
 import { cekEmail } from "@/lib/periksa/email";
+import { cekUsername } from "@/lib/periksa/username";
 import { validasiTelepon } from "@/lib/periksa/telepon";
 
 export const metadata: Metadata = { title: "Periksa" };
@@ -49,6 +50,7 @@ export default async function PeriksaPage({
   const deteksi = deteksiIdentifier(masukan);
   const telepon = deteksi?.jenis === "nomor_hp" ? validasiTelepon(deteksi.ternormalisasi) : null;
   const email = deteksi?.jenis === "email" ? await cekEmail(deteksi.ternormalisasi) : null;
+  const username = deteksi?.jenis === "username" ? await cekUsername(deteksi.ternormalisasi) : null;
   const nonce = randomUUID();
 
   let costExact: number | null = null;
@@ -99,6 +101,31 @@ export default async function PeriksaPage({
                   Mesin pemeriksaan belum tersedia
                 </button>
               )}
+            </>
+          ) : deteksi.jenis === "username" && username ? (
+            <>
+              <p className="catatan">
+                Cek keberadaan handle di GitHub — instan, gratis. Handle yang sama{" "}
+                <strong>belum tentu</strong> orang yang sama.
+              </p>
+              <dl className="rincian">
+                <div>
+                  <dt>GitHub</dt>
+                  <dd>
+                    {username.github === null
+                      ? "Belum bisa dipastikan"
+                      : username.github
+                        ? "Ada"
+                        : "Tidak ditemukan"}
+                  </dd>
+                </div>
+                {username.githubUrl ? (
+                  <div>
+                    <dt>Profil</dt>
+                    <dd>{username.githubUrl}</dd>
+                  </div>
+                ) : null}
+              </dl>
             </>
           ) : deteksi.jenis === "email" && email ? (
             <>
