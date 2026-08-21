@@ -1,6 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { bacaFaktaRdap, type FaktaRdap } from "@/lib/periksa/rdap-fakta";
-import { analisaDomain } from "@/lib/ai/analis";
+import { analisaDomainTercache } from "@/lib/ai/analis";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
@@ -46,7 +46,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ ref
   }
   if (!facts) return TAK_TERSEDIA;
 
-  const analisa = await analisaDomain(facts);
+  const analisa = await analisaDomainTercache(ref, facts);
   return Response.json(
     { tersedia: true, ...analisa },
     { headers: { "Cache-Control": "no-store" } },

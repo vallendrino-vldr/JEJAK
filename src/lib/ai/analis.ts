@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import type { FaktaRdap } from "@/lib/periksa/rdap-fakta";
 import { panggilAI } from "./penyedia";
 import {
@@ -27,4 +28,18 @@ export async function analisaDomain(facts: FaktaRdap): Promise<HasilAnalisa> {
   }
 
   return ringkasanAturan(facts);
+}
+
+/**
+ * Versi tercache. Hasil scan `completed` itu immutable, jadi analisa dihitung
+ * sekali per scan lalu dilayani dari Next Data Cache — hemat biaya AI, TANPA
+ * tabel DB. TTL 1 jam supaya hasil fallback (saat AI mati) bisa dicoba-ulang ke
+ * AI, bukan nyangkut selamanya.
+ * ponytail: cache tanpa DDL. Naikkan ke persist di tabel hanya kalau butuh
+ * invalidasi manual per-scan atau audit hasil analisa.
+ */
+export function analisaDomainTercache(ref: string, facts: FaktaRdap): Promise<HasilAnalisa> {
+  return unstable_cache(() => analisaDomain(facts), ["analisa-domain", ref], {
+    revalidate: 3600,
+  })();
 }
