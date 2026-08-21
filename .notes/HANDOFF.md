@@ -86,6 +86,8 @@ Untuk `pnpm db:test`: set `JEJAK_DB_URL` = URL pooler di atas dulu (scriptnya se
 
 **Docker tidak tersedia** → `supabase start`/`db diff`/local reset tidak jalan. Migration ditulis tangan → apply ke remote pakai cara di atas. Itu sebabnya migration head lokal = yang diterapkan (tidak pakai migration history table CLI).
 
+> **⚠️ BLOCKER APPLY MIGRATION (per 2026-08-21):** Password Database di `JEJAK.md` **gagal auth** ke canonical (`FATAL 28P01 password authentication failed`) via pooler — kemungkinan stale/rotated atau milik project duplikat. MCP Supabase yang ke-connect **hanya punya akun project DUPLIKAT** (`gzmtzdvxerpvetfmqale` "JEJAK" + `hjdctzrvnhvarxoxixrn` "Malesan") — BUKAN canonical `tauyicvfhpfnohhgccvn`. Jadi **DDL ke canonical belum bisa** sampai Product Owner kasih salah satu: (a) DB password canonical yang benar, (b) reset password di dashboard Supabase → kasih yang baru, atau (c) access token / connect MCP ke akun pemilik canonical. Service key (`SUPABASE_SECRET_KEY`) tetap jalan untuk RPC/PostgREST (mis. `grant_credits` sukses), tapi itu tidak bisa DDL. Semua kerja schema (Phase 9 dst) nunggu ini.
+
 ---
 
 ## 5. STATUS PER FITUR (per 2026-08-21, commit `cfaea29`, migration head `20260821080000`)
@@ -106,7 +108,7 @@ Empat tingkat: **acceptance-proven** (ada test) · **production-functional** (ja
 | Kredit ledger + Dompet | wired | wallet + lot + ledger + FEFO + hold (Codex, teruji SQL). Dompet nampilkan saldo asli. Trigger bikin wallet tiap user baru. |
 | Ruang Kendali (admin) | production-functional | Ringkasan/Pengguna/Pemeriksaan/Sumber — owner-only, read-only |
 | PWA install (manifest + ikon) | production-functional | installable. **Service worker + Version Sentinel BELUM** |
-| **Analisa AI (Phase 8)** | wired | Analis DOMAIN jalan: bagian "Analisa" di `/periksa/[ref]` (scan completed) baca RDAP → ringkasan+observasi via Groq `openai/gpt-oss-20b` primary / Gemini `gemini-3.5-flash-lite` failover (~1.5s, keduanya smoke vs data RDAP asli), grounded + fallback rule-based, DI LUAR jalur kredit (route read-only RLS). Teruji: provider live + logika unit + gate hijau + analisa jalan vs data google.com asli. Skeptic/korelasi/graph/asisten belum. Cache belum (recompute tiap view). DEC-0127. |
+| **Analisa AI (Phase 8)** | wired | Analis DOMAIN jalan: bagian "Analisa" di `/periksa/[ref]` (scan completed) baca RDAP → ringkasan+observasi via Groq `openai/gpt-oss-20b` primary / Gemini `gemini-3.5-flash-lite` failover (~1.5s, keduanya smoke vs data RDAP asli), grounded + fallback rule-based, DI LUAR jalur kredit (route read-only RLS). Teruji: provider live + logika unit + gate hijau + analisa jalan vs data google.com asli. Skeptic/korelasi/graph/asisten belum. Cache: Next Data Cache (`unstable_cache`) 1 jam per-scan. DEC-0127. |
 | **Pembayaran/top-up (Phase 9)** | **BELUM** | beli kredit, transfer manual, approval atomik. Belum ada. |
 | Partner (11), Observability/NADI (14), Security hardening (15), QA (16), Rilis (17-18) | belum | |
 

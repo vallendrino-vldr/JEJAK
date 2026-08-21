@@ -3399,7 +3399,7 @@ Slice pertama Phase 8 butuh layer penyedia AI konkret (endpoint, model, bentuk r
 Nama model berubah sering; smoke membuktikan kontrak REST benar tanpa menebak. Menjauhkan AI dari pipeline kredit menjaga jalur uang tetap utuh dan membuat AI benar-benar opsional.
 
 ### Dampak
-- Ceiling yang sengaja ditunda: hasil analisa TIDAK di-cache — dihitung ulang tiap buka halaman hasil. Persistensi (tulis saat finalize scan / tabel cache) = slice berikutnya. Ditandai `ponytail:` di kode.
+- Analisa di-cache via Next Data Cache (`unstable_cache`, TTL 1 jam) keyed per scan ref — dihitung sekali, hemat biaya AI, TANPA tabel DB (hasil scan `completed` immutable). Persist ke tabel hanya kalau butuh invalidasi manual/audit (belum perlu).
 - Model di-hardcode sebagai konstanta; pindah ke config DB kalau Owner perlu ganti tanpa deploy (ENV_CONTRACT §18/§205).
 - Belum termasuk: AI Skeptic (§38 langkah 4), correlation/contradiction engine (butuh >1 sumber), graph upgrade, contextual assistant.
 
