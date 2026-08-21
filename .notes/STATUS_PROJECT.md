@@ -9,14 +9,14 @@
 | Project | JEJAK — alat pemeriksaan jejak digital berbasis bukti |
 | Domain produksi | `https://www.cekjejak.my.id` |
 | Mode sesi | RESUME |
-| Current Phase | Phase 7 — Source Registry & Scan Engine (`IN_PROGRESS`) |
+| Current Phase | Phase 7 selesai (Domain/RDAP live) + Phase 10 dimulai (Ruang Kendali Ringkasan) |
 | Current Milestone | Vertical slice Domain + RDAP yang durable, aman, dan refundable |
 | Current Branch | `codex/phase7-domain-rdap-hardening` |
 | Baseline Commit | `f996117` — `feat(scan): implement RDAP vertical slice with evidence wiring and settlement` |
 | Latest Checkpoint | commit ini — `fix(workflow): keep internal runner outside auth redirect` |
-| Working Tree | Bersih setelah follow-up workflow + signed-in QA |
+| Working Tree | Bersih. Git push + DB access dua-duanya jalan (transient tempo hari sudah pulih). |
 | Latest Deploy | Preview checkpoint `2d757b4` sukses; production tetap build lama `5b5fbd4d3e34` |
-| Local Migration Head | `20260820150759_revoke_global_function_defaults.sql` |
+| Local Migration Head | `20260821040000_ruang_kendali_ringkasan.sql` |
 | Applied Migration Head | Canonical lama: `20260820150759` (20 migration); duplikat baru tetap kosong |
 | Last Updated | 2026-08-20 oleh Codex |
 
@@ -86,6 +86,9 @@
 | Production deploy | NOT DEPLOYED | 2026-08-20 | Build live masih `5b5fbd4d3e34`; batch ini belum didorong |
 
 ## Known Issues dan Blocker
+
+- SECURITY: seluruh isi `JEJAK.md` (semua API key Gemini/Groq/Deepseek, DB password, Supabase secret + service_role JWT + legacy JWT, anon key) sempat terekspos di transcript sesi Agent. WAJIB rotasi semua lalu update Vercel env + `.env.local`.
+- Production `main` sekarang `d2c14bd` (Ruang Kendali Ringkasan). Deploy otomatis dari `main`.
 
 - CLI saat ini terautentikasi ke akun pemilik project duplikat dan sengaja tidak ditautkan. Operasi DB canonical harus memakai URL tervalidasi atau login akun lama.
 - Preview Vercel dilindungi SSO; QA signed-in lokal belum menggantikan bukti runtime preview final.
