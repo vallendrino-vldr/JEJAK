@@ -78,3 +78,12 @@ export async function hapusKasus(formData: FormData): Promise<void> {
   revalidatePath("/kasus");
   redirect("/kasus");
 }
+
+export async function pulihkanKasus(formData: FormData): Promise<void> {
+  const caseId = String(formData.get("caseId") ?? "");
+  const supabase = await createSupabaseServerClient();
+  await supabase.rpc("pulihkan_kasus", { p_case_id: caseId });
+  revalidatePath("/kasus/sampah");
+  revalidatePath("/kasus");
+  redirect(`/kasus/${caseId}`);
+}

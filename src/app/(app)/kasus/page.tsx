@@ -22,6 +22,9 @@ export default async function KasusPage() {
           <Link href="/kasus/baru" className="tombol-utama">
             Buat kasus
           </Link>
+          <Link href="/kasus/sampah" className="tombol-sekunder">
+            Sampah
+          </Link>
         </p>
       </section>
 
