@@ -160,6 +160,24 @@ export default async function PeriksaPage({
                     <dd>{email.mxHost}</dd>
                   </div>
                 ) : null}
+                {email.penyedia ? (
+                  <div>
+                    <dt>Penyedia email</dt>
+                    <dd>{email.penyedia}</dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt>Email sekali pakai?</dt>
+                  <dd>{email.disposable ? "Ya — domain email temporer" : "Tidak terdeteksi"}</dd>
+                </div>
+                {email.peran ? (
+                  <div>
+                    <dt>Jenis alamat</dt>
+                    <dd>
+                      Akun peran/organisasi (mis. admin, info) — biasanya bukan orang tertentu
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
             </>
           ) : deteksi.jenis === "nomor_hp" && telepon ? (
