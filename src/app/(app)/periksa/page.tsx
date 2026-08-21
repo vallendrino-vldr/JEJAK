@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { FormMulaiScan } from "@/components/periksa/form-mulai-scan";
 import { SearchConsole } from "@/components/periksa/search-console";
 import { deteksiIdentifier, type JenisIdentifier } from "@/lib/periksa/deteksi";
+import { validasiTelepon } from "@/lib/periksa/telepon";
 
 export const metadata: Metadata = { title: "Periksa" };
 
@@ -45,6 +46,7 @@ export default async function PeriksaPage({
   const { q } = await searchParams;
   const masukan = typeof q === "string" ? q : "";
   const deteksi = deteksiIdentifier(masukan);
+  const telepon = deteksi?.jenis === "nomor_hp" ? validasiTelepon(deteksi.ternormalisasi) : null;
   const nonce = randomUUID();
 
   let costExact: number | null = null;
@@ -95,6 +97,37 @@ export default async function PeriksaPage({
                   Mesin pemeriksaan belum tersedia
                 </button>
               )}
+            </>
+          ) : deteksi.jenis === "nomor_hp" && telepon ? (
+            <>
+              <p className="catatan">
+                Validasi format & wilayah — instan, gratis, bukan pemeriksaan berbayar. Ini{" "}
+                <strong>bukan</strong> info pemilik nomor.
+              </p>
+              <dl className="rincian">
+                <div>
+                  <dt>Status format</dt>
+                  <dd>{telepon.valid ? "Valid" : "Tidak valid"}</dd>
+                </div>
+                {telepon.format ? (
+                  <div>
+                    <dt>Ditulis rapi</dt>
+                    <dd>{telepon.format}</dd>
+                  </div>
+                ) : null}
+                {telepon.wilayah ? (
+                  <div>
+                    <dt>Wilayah</dt>
+                    <dd>{telepon.wilayah}</dd>
+                  </div>
+                ) : null}
+                {telepon.jenis ? (
+                  <div>
+                    <dt>Jenis nomor</dt>
+                    <dd>{telepon.jenis}</dd>
+                  </div>
+                ) : null}
+              </dl>
             </>
           ) : (
             <>
