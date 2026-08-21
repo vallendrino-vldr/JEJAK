@@ -14,7 +14,15 @@ declare
     'public.pisahkan_entitas(uuid,uuid)'::regprocedure,
     'public.tambah_lampiran(uuid,public.attachment_type,text,text,bigint)'::regprocedure,
     'public.mulai_scan(text,public.scan_target_type_enum,text,text,uuid)'::regprocedure,
-    'public.batalkan_scan_diminta(uuid)'::regprocedure
+    'public.batalkan_scan_diminta(uuid)'::regprocedure,
+    -- Ruang Kendali (read-only, cek izin internal) + Kasus sampah (cek kepemilikan).
+    'public.ringkasan_kendali()'::regprocedure,
+    'public.daftar_pengguna_kendali()'::regprocedure,
+    'public.daftar_scan_kendali()'::regprocedure,
+    'public.daftar_sumber_kendali()'::regprocedure,
+    'public.hapus_kasus(uuid)'::regprocedure,
+    'public.pulihkan_kasus(uuid)'::regprocedure,
+    'public.daftar_sampah_kasus()'::regprocedure
   ];
   boundary_worker regprocedure[] := array[
     'public.grant_credits(uuid,integer,integer,public.origin_type,text,timestamptz,text,text)'::regprocedure,
