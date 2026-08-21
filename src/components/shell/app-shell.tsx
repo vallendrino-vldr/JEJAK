@@ -281,6 +281,13 @@ function IsiDompet({ dompet }: { dompet: DompetInfo | null }) {
         Kredit ini digunakan untuk melakukan pemeriksaan mendalam. Riwayat transaksi lengkap bisa
         dilihat lewat Pengaturan Akun di masa depan.
       </p>
+      <Link
+        href="/top-up"
+        className="tombol-utama"
+        style={{ marginTop: "1rem", display: "inline-flex" }}
+      >
+        Isi ulang kredit
+      </Link>
     </>
   );
 }

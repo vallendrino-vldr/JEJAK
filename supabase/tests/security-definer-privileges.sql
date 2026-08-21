@@ -29,7 +29,8 @@ declare
     'public.buat_order_topup(text,text)'::regprocedure,
     'public.submit_proof(text,text,text,text,integer,integer)'::regprocedure,
     'public.approve_topup(text,integer,text,text)'::regprocedure,
-    'public.reject_topup(text,text,text)'::regprocedure
+    'public.reject_topup(text,text,text)'::regprocedure,
+    'public.daftar_topup_kendali()'::regprocedure
   ];
   boundary_worker regprocedure[] := array[
     'public.grant_credits(uuid,integer,integer,public.origin_type,text,timestamptz,text,text)'::regprocedure,

@@ -54,6 +54,12 @@ export default async function RuangKendaliPage() {
           <Link href="/ruang-kendali/sumber" className="tombol-utama">
             Sumber
           </Link>
+          <Link href="/ruang-kendali/pembayaran" className="tombol-utama">
+            Pembayaran
+          </Link>
+          <Link href="/ruang-kendali/rekening" className="tombol-utama">
+            Rekening
+          </Link>
           <Link href="/beranda" className="tombol-sekunder">
             Kembali sebagai Pengguna
           </Link>
@@ -70,7 +76,7 @@ export default async function RuangKendaliPage() {
           ))}
         </div>
         <p className="catatan">
-          Bagian lain Ruang Kendali — pembayaran, pengelolaan pengguna, konfigurasi — nyusul di fase
+          Konfigurasi lain — paket & rekening, pengelolaan pengguna lanjutan — nyusul di fase
           berikutnya.
         </p>
       </section>
