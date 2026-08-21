@@ -48,6 +48,12 @@ export default async function RuangKendaliPage() {
           <Link href="/ruang-kendali/pengguna" className="tombol-utama">
             Pengguna
           </Link>
+          <Link href="/ruang-kendali/pemeriksaan" className="tombol-utama">
+            Pemeriksaan
+          </Link>
+          <Link href="/ruang-kendali/sumber" className="tombol-utama">
+            Sumber
+          </Link>
           <Link href="/beranda" className="tombol-sekunder">
             Kembali sebagai Pengguna
           </Link>
