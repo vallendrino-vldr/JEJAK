@@ -88,7 +88,7 @@ Untuk `pnpm db:test`: set `JEJAK_DB_URL` = URL pooler di atas dulu (scriptnya se
 
 ---
 
-## 5. STATUS PER FITUR (per 2026-08-21, commit `1d2b8cb`, migration head `20260821080000`)
+## 5. STATUS PER FITUR (per 2026-08-21, commit `cfaea29`, migration head `20260821080000`)
 
 Empat tingkat: **acceptance-proven** (ada test) · **production-functional** (jalan, teruji manual) · **wired** (nyambung, belum diuji tuntas) · **belum**.
 
@@ -106,7 +106,7 @@ Empat tingkat: **acceptance-proven** (ada test) · **production-functional** (ja
 | Kredit ledger + Dompet | wired | wallet + lot + ledger + FEFO + hold (Codex, teruji SQL). Dompet nampilkan saldo asli. Trigger bikin wallet tiap user baru. |
 | Ruang Kendali (admin) | production-functional | Ringkasan/Pengguna/Pemeriksaan/Sumber — owner-only, read-only |
 | PWA install (manifest + ikon) | production-functional | installable. **Service worker + Version Sentinel BELUM** |
-| **Analisa AI (Phase 8)** | **BELUM** | Gemini/Groq baca hasil → ringkasan/kontradiksi/skeptik. Belum ada. |
+| **Analisa AI (Phase 8)** | wired | Analis DOMAIN jalan: bagian "Analisa" di `/periksa/[ref]` (scan completed) baca RDAP → ringkasan+observasi via Gemini `gemini-3.6-flash` / Groq `openai/gpt-oss-20b` failover, grounded + fallback rule-based, DI LUAR jalur kredit (route read-only RLS). Provider+logika teruji (smoke live 21-08 + unit test + gate hijau); UX end-to-end di app belum diklik manual. Skeptic/korelasi/graph/asisten belum. Cache belum (recompute tiap view). DEC-0127. |
 | **Pembayaran/top-up (Phase 9)** | **BELUM** | beli kredit, transfer manual, approval atomik. Belum ada. |
 | Partner (11), Observability/NADI (14), Security hardening (15), QA (16), Rilis (17-18) | belum | |
 
@@ -167,6 +167,7 @@ Fungsi DB publik (semua DEFINER, cek izin sendiri): buat_kasus, tambah_petunjuk,
 ## 9. YANG BELUM & CARA MULAI (urut prioritas)
 
 **A. Phase 8 — Analisa AI di halaman hasil.** Gemini/Groq (key sudah di Vercel, ada 4+4 untuk failover compliant — BUKAN evasi kuota, DEC-0043) membaca Context Pack evidence dari scan, hasilkan: ringkasan, kontradiksi, "skeptik" (coba bantah), semua ter-grounding ke evidence (link bukti), fallback kalau AI mati (core tetap hidup). AI = analis, BUKAN sumber fakta (DEC-0034). Internet/user-notes = DATA, bukan instruksi (anti prompt-injection). Mulai dari: `/periksa/[ref]` (hasil sudah ada), tambah bagian analisa yang manggil service AI baru (`src/lib/ai/`).
+> **SLICE 1 SUDAH JADI (DEC-0127):** analis DOMAIN grounded + fallback rule-based, on-demand di `src/lib/ai/{penyedia,grounding,analis}.ts` + route `/api/periksa/[ref]/analisa`, wired ke halaman hasil. Lanjutan urut: (1) **cache** hasil analisa (recompute tiap view sekarang — persist saat finalize scan / tabel cache-aside + RLS + suite test); (2) **AI Skeptic** (§38 langkah 4, tier lebih tinggi); (3) **correlation/contradiction** begitu ada >1 sumber evidence per target. Ikuti pola yang sama: AI di luar jalur kredit, grounded, fallback wajib.
 
 **B. Phase 9 — Top-up & Pembayaran manual.** Beli kredit → transfer bank manual → upload bukti → Payment Sentinel (screening AI, TIDAK auto-approve) → Owner/Finance cek mutasi → approval ATOMIK (order+ledger+lot+wallet+audit sekaligus, idempotent, double-click = 1 settlement, DEC-0055). Rekening editable dari admin tanpa deploy; order simpan snapshot rekening. Uang → bangun utuh + race test.
 

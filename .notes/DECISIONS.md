@@ -3378,6 +3378,39 @@ Tidak ada.
 
 ---
 
+## DEC-0127 — Analis AI domain: model dipilih via smoke, on-demand di luar jalur kredit
+
+**Status:** AKTIF
+
+**Phase:** 8
+
+**Tanggal:** 2026-08-21
+
+### Masalah
+Slice pertama Phase 8 butuh layer penyedia AI konkret (endpoint, model, bentuk request/respons). Nama model yang diingat agent (`gemini-2.0-flash`, `llama-3.3-70b-versatile`) ternyata sudah pensiun/tidak tersedia di akun ini (HTTP 404). Analisa juga harus tersedia tanpa menyentuh pipeline kredit/scan yang rapuh (HANDOFF §7).
+
+### Keputusan
+- Provider layer memakai REST langsung tanpa SDK (`src/lib/ai/penyedia.ts`): Gemini `gemini-3.6-flash` primary, Groq `openai/gpt-oss-20b` failover. Kedua model diverifikasi via smoke ke provider nyata pada 2026-08-21 (json mode + Bahasa Indonesia jalan).
+- Slot ditemukan dari env (`GEMINI_API_KEY_1..4`, `GROQ_API_KEY_1..4`); kosong dilewati. Failover antar-slot murni untuk ketersediaan, bukan evasi kuota (patuh DEC-0043).
+- Analisa dihitung on-demand di route read-only `/api/periksa/[ref]/analisa` (RLS-scoped), DI LUAR pipeline kredit. Tidak menyentuh `src/workflows/scan.ts`.
+- Grounding praktis (DEC-0035): keluaran AI ditolak → fallback rule-based bila JSON rusak, ada kata vonis (§75), ada tautan, atau kepanjangan. Rule-based deterministik selalu jadi floor (DEC-0034: core hidup tanpa AI).
+
+### Alasan
+Nama model berubah sering; smoke membuktikan kontrak REST benar tanpa menebak. Menjauhkan AI dari pipeline kredit menjaga jalur uang tetap utuh dan membuat AI benar-benar opsional.
+
+### Dampak
+- Ceiling yang sengaja ditunda: hasil analisa TIDAK di-cache — dihitung ulang tiap buka halaman hasil. Persistensi (tulis saat finalize scan / tabel cache) = slice berikutnya. Ditandai `ponytail:` di kode.
+- Model di-hardcode sebagai konstanta; pindah ke config DB kalau Owner perlu ganti tanpa deploy (ENV_CONTRACT §18/§205).
+- Belum termasuk: AI Skeptic (§38 langkah 4), correlation/contradiction engine (butuh >1 sumber), graph upgrade, contextual assistant.
+
+### Blueprint terkait
+`src/lib/ai/penyedia.ts`, `src/lib/ai/grounding.ts`, `src/lib/ai/analis.ts`, `src/lib/ai/grounding.test.ts`, `src/app/api/periksa/[ref]/analisa/route.ts`, `src/app/(app)/periksa/[ref]/analisa-domain.tsx`, `src/lib/periksa/rdap-fakta.ts`. Terkait DEC-0034, DEC-0035, DEC-0043.
+
+### Menggantikan
+Tidak ada.
+
+---
+
 # 5. KEPUTUSAN YANG WAJIB DIBUAT SAAT IMPLEMENTASI BILA RELEVAN
 
 Saat Agent benar-benar menjalankan project, keputusan berikut belum boleh diasumsikan dan harus dicatat jika significant:
