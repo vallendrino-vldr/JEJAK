@@ -7,16 +7,17 @@ import { getServerEnv } from "@/lib/env/server";
  * - Slot ditemukan dari env (GEMINI_API_KEY_1..4, GROQ_API_KEY_1..4); slot
  *   kosong dilewati. Jumlah key bukan arsitektur (ENV_CONTRACT §14).
  * - Multi-key HANYA untuk ketersediaan/failover, BUKAN evasi kuota (DEC-0043).
- *   Urutan coba: semua Gemini lalu semua Groq — failover karena satu jalur
- *   tidak tersedia, bukan untuk menembus limit.
+ *   Urutan coba: semua Groq dulu (lebih cepat, ~1.5s) lalu Gemini flash-lite —
+ *   failover karena satu jalur tidak tersedia, bukan untuk menembus limit.
  * - Kunci tidak pernah masuk log/URL. Yang dicatat cuma alias + status.
  */
 
 // ponytail: model di-hardcode. Pindah ke config DB kalau Owner perlu ganti
-// model tanpa deploy (ENV_CONTRACT §18/§205). Keduanya diverifikasi via smoke
-// ke provider nyata (2026-08-21); model lama sudah pensiun.
-const MODEL_GEMINI = "gemini-3.6-flash";
+// model tanpa deploy (ENV_CONTRACT §18/§205). Keduanya diverifikasi via smoke ke
+// provider nyata (2026-08-21) vs data RDAP asli: ~1.5s + JSON valid. Model lite
+// dipilih karena gemini-3.6-flash (thinking) makan ~30s → timeout.
 const MODEL_GROQ = "openai/gpt-oss-20b";
+const MODEL_GEMINI = "gemini-3.5-flash-lite";
 
 const PER_SLOT_MS = 9_000;
 const DEADLINE_MS = 16_000;
@@ -40,14 +41,14 @@ function daftarSlot(): Slot[] {
 
   const slot: Slot[] = [];
   for (const [alias, provider] of [
-    ["GEMINI_API_KEY_1", "gemini"],
-    ["GEMINI_API_KEY_2", "gemini"],
-    ["GEMINI_API_KEY_3", "gemini"],
-    ["GEMINI_API_KEY_4", "gemini"],
     ["GROQ_API_KEY_1", "groq"],
     ["GROQ_API_KEY_2", "groq"],
     ["GROQ_API_KEY_3", "groq"],
     ["GROQ_API_KEY_4", "groq"],
+    ["GEMINI_API_KEY_1", "gemini"],
+    ["GEMINI_API_KEY_2", "gemini"],
+    ["GEMINI_API_KEY_3", "gemini"],
+    ["GEMINI_API_KEY_4", "gemini"],
   ] as const) {
     const key = (env as Record<string, string | undefined>)[alias];
     if (key) slot.push({ alias, provider, key });
@@ -71,7 +72,7 @@ async function panggilGemini(slot: Slot, req: PermintaanAI, signal: AbortSignal)
         contents: [{ role: "user", parts: [{ text: req.user }] }],
         generationConfig: {
           temperature: req.temperature ?? 0.2,
-          maxOutputTokens: req.maxOutputTokens ?? 700,
+          maxOutputTokens: req.maxOutputTokens ?? 1200,
           responseMimeType: "application/json",
         },
       }),
@@ -94,7 +95,7 @@ async function panggilGroq(slot: Slot, req: PermintaanAI, signal: AbortSignal): 
     body: JSON.stringify({
       model: MODEL_GROQ,
       temperature: req.temperature ?? 0.2,
-      max_tokens: req.maxOutputTokens ?? 700,
+      max_tokens: req.maxOutputTokens ?? 1200,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: req.system },
