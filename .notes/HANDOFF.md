@@ -106,7 +106,7 @@ Empat tingkat: **acceptance-proven** (ada test) · **production-functional** (ja
 | Kredit ledger + Dompet | wired | wallet + lot + ledger + FEFO + hold (Codex, teruji SQL). Dompet nampilkan saldo asli. Trigger bikin wallet tiap user baru. |
 | Ruang Kendali (admin) | production-functional | Ringkasan/Pengguna/Pemeriksaan/Sumber — owner-only, read-only |
 | PWA install (manifest + ikon) | production-functional | installable. **Service worker + Version Sentinel BELUM** |
-| **Analisa AI (Phase 8)** | wired | Analis DOMAIN jalan: bagian "Analisa" di `/periksa/[ref]` (scan completed) baca RDAP → ringkasan+observasi via Gemini `gemini-3.6-flash` / Groq `openai/gpt-oss-20b` failover, grounded + fallback rule-based, DI LUAR jalur kredit (route read-only RLS). Provider+logika teruji (smoke live 21-08 + unit test + gate hijau); UX end-to-end di app belum diklik manual. Skeptic/korelasi/graph/asisten belum. Cache belum (recompute tiap view). DEC-0127. |
+| **Analisa AI (Phase 8)** | wired | Analis DOMAIN jalan: bagian "Analisa" di `/periksa/[ref]` (scan completed) baca RDAP → ringkasan+observasi via Groq `openai/gpt-oss-20b` primary / Gemini `gemini-3.5-flash-lite` failover (~1.5s, keduanya smoke vs data RDAP asli), grounded + fallback rule-based, DI LUAR jalur kredit (route read-only RLS). Teruji: provider live + logika unit + gate hijau + analisa jalan vs data google.com asli. Skeptic/korelasi/graph/asisten belum. Cache belum (recompute tiap view). DEC-0127. |
 | **Pembayaran/top-up (Phase 9)** | **BELUM** | beli kredit, transfer manual, approval atomik. Belum ada. |
 | Partner (11), Observability/NADI (14), Security hardening (15), QA (16), Rilis (17-18) | belum | |
 

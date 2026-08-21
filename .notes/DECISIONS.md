@@ -3390,7 +3390,7 @@ Tidak ada.
 Slice pertama Phase 8 butuh layer penyedia AI konkret (endpoint, model, bentuk request/respons). Nama model yang diingat agent (`gemini-2.0-flash`, `llama-3.3-70b-versatile`) ternyata sudah pensiun/tidak tersedia di akun ini (HTTP 404). Analisa juga harus tersedia tanpa menyentuh pipeline kredit/scan yang rapuh (HANDOFF §7).
 
 ### Keputusan
-- Provider layer memakai REST langsung tanpa SDK (`src/lib/ai/penyedia.ts`): Gemini `gemini-3.6-flash` primary, Groq `openai/gpt-oss-20b` failover. Kedua model diverifikasi via smoke ke provider nyata pada 2026-08-21 (json mode + Bahasa Indonesia jalan).
+- Provider layer memakai REST langsung tanpa SDK (`src/lib/ai/penyedia.ts`): Groq `openai/gpt-oss-20b` **primary** (~1.5s), Gemini `gemini-3.5-flash-lite` **failover** (~1.5s). Keduanya diverifikasi via smoke ke provider nyata pada 2026-08-21 vs data RDAP google.com asli (JSON valid + grounded). Model thinking `gemini-3.6-flash` DITOLAK: makan ~30s → timeout route/slot → selalu fallback; `thinkingBudget:0` ditolak provider (400). maxOutputTokens 1200 (700 kepotong di data lengkap).
 - Slot ditemukan dari env (`GEMINI_API_KEY_1..4`, `GROQ_API_KEY_1..4`); kosong dilewati. Failover antar-slot murni untuk ketersediaan, bukan evasi kuota (patuh DEC-0043).
 - Analisa dihitung on-demand di route read-only `/api/periksa/[ref]/analisa` (RLS-scoped), DI LUAR pipeline kredit. Tidak menyentuh `src/workflows/scan.ts`.
 - Grounding praktis (DEC-0035): keluaran AI ditolak → fallback rule-based bila JSON rusak, ada kata vonis (§75), ada tautan, atau kepanjangan. Rule-based deterministik selalu jadi floor (DEC-0034: core hidup tanpa AI).
