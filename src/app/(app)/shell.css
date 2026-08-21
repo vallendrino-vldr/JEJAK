@@ -920,3 +920,17 @@ select.isian {
   color: var(--titanium-redup);
   font-size: 0.76rem;
 }
+
+/* ---------------- Ruang Kendali: kartu statistik ---------------- */
+
+.kartu-statik {
+  gap: var(--r1);
+}
+
+.statik-angka {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 680;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ivory);
+}

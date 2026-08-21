@@ -11,6 +11,7 @@ import {
   IkonKasus,
   IkonKembali,
   IkonPeriksa,
+  IkonRuangKendali,
   IkonSegarkan,
   IkonTutup,
 } from "@/components/ikon";
@@ -149,6 +150,18 @@ export function AppShell({
             <span>{label}</span>
           </Link>
         ))}
+
+        {sesi.peran.includes("owner") || sesi.peran.includes("admin") ? (
+          <Link
+            href="/ruang-kendali"
+            className="nav-item nav-item-kendali"
+            aria-current={pathname.startsWith("/ruang-kendali") ? "page" : undefined}
+            onClick={tutupPanel}
+          >
+            <IkonRuangKendali />
+            <span>Ruang Kendali</span>
+          </Link>
+        ) : null}
       </nav>
 
       <main className="shell-workspace gulir" id="workspace">
