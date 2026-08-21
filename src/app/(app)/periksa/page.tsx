@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { FormMulaiScan } from "@/components/periksa/form-mulai-scan";
 import { SearchConsole } from "@/components/periksa/search-console";
 import { deteksiIdentifier, type JenisIdentifier } from "@/lib/periksa/deteksi";
+import { cekEmail } from "@/lib/periksa/email";
 import { validasiTelepon } from "@/lib/periksa/telepon";
 
 export const metadata: Metadata = { title: "Periksa" };
@@ -47,6 +48,7 @@ export default async function PeriksaPage({
   const masukan = typeof q === "string" ? q : "";
   const deteksi = deteksiIdentifier(masukan);
   const telepon = deteksi?.jenis === "nomor_hp" ? validasiTelepon(deteksi.ternormalisasi) : null;
+  const email = deteksi?.jenis === "email" ? await cekEmail(deteksi.ternormalisasi) : null;
   const nonce = randomUUID();
 
   let costExact: number | null = null;
@@ -97,6 +99,41 @@ export default async function PeriksaPage({
                   Mesin pemeriksaan belum tersedia
                 </button>
               )}
+            </>
+          ) : deteksi.jenis === "email" && email ? (
+            <>
+              <p className="catatan">
+                Cek format & apakah domainnya menerima email — instan, gratis, bukan pemeriksaan
+                berbayar.
+              </p>
+              <dl className="rincian">
+                <div>
+                  <dt>Format</dt>
+                  <dd>{email.formatValid ? "Valid" : "Tidak valid"}</dd>
+                </div>
+                {email.domain ? (
+                  <div>
+                    <dt>Domain</dt>
+                    <dd>{email.domain}</dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt>Server email (MX)</dt>
+                  <dd>
+                    {email.punyaMx === null
+                      ? "Belum bisa dipastikan"
+                      : email.punyaMx
+                        ? "Ada — domain bisa terima email"
+                        : "Tidak ada — domain ini nggak terima email"}
+                  </dd>
+                </div>
+                {email.mxHost ? (
+                  <div>
+                    <dt>Penerima utama</dt>
+                    <dd>{email.mxHost}</dd>
+                  </div>
+                ) : null}
+              </dl>
             </>
           ) : deteksi.jenis === "nomor_hp" && telepon ? (
             <>
