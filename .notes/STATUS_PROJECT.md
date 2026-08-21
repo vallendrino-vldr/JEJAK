@@ -9,14 +9,14 @@
 | Project | JEJAK — alat pemeriksaan jejak digital berbasis bukti |
 | Domain produksi | `https://www.cekjejak.my.id` |
 | Mode sesi | RESUME |
-| Current Phase | Phase 7 selesai (Domain/RDAP live) + Phase 10 dimulai (Ruang Kendali Ringkasan) |
+| Current Phase | Phase 7 (scan domain) live · Phase 10 admin (Ringkasan/Pengguna/Pemeriksaan/Sumber) live · Phase 12 hapus kasus live |
 | Current Milestone | Vertical slice Domain + RDAP yang durable, aman, dan refundable |
 | Current Branch | `codex/phase7-domain-rdap-hardening` |
 | Baseline Commit | `f996117` — `feat(scan): implement RDAP vertical slice with evidence wiring and settlement` |
 | Latest Checkpoint | commit ini — `fix(workflow): keep internal runner outside auth redirect` |
 | Working Tree | Bersih. Git push + DB access dua-duanya jalan (transient tempo hari sudah pulih). |
 | Latest Deploy | Preview checkpoint `2d757b4` sukses; production tetap build lama `5b5fbd4d3e34` |
-| Local Migration Head | `20260821040000_ruang_kendali_ringkasan.sql` |
+| Local Migration Head | `20260821070000_hapus_kasus.sql` |
 | Applied Migration Head | Canonical lama: `20260820150759` (20 migration); duplikat baru tetap kosong |
 | Last Updated | 2026-08-20 oleh Codex |
 
@@ -84,6 +84,12 @@
 | RLS + Ledger live | PASS | 2026-08-20 | Privilege matrix live + suite PostgreSQL hijau |
 | Signed-in browser QA | PARTIAL PASS | 2026-08-20 | Lokal: sesi Google asli, desktop + HP 390×844, success/settle + no-result/refund, saldo 1/reserved 0; preview masih tertahan SSO |
 | Production deploy | NOT DEPLOYED | 2026-08-20 | Build live masih `5b5fbd4d3e34`; batch ini belum didorong |
+
+## CARA OPERASIONAL (sesi Agent) — penting
+
+- Push reliabel (GCM suka munculin dialog GUI yang nge-block): `GCM_INTERACTIVE=never GIT_TERMINAL_PROMPT=0 git push origin main`. Pesan "Cannot prompt" muncul tapi tetap push dari kredensial cache.
+- Apply migration ke canonical (CLI `db query` cuma 1 statement per panggilan): pakai session pooler `postgresql://postgres.tauyicvfhpfnohhgccvn:<db-pass>@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres`. Jalankan tiap statement terpisah. Host langsung `db.<ref>` IPv6-only, jangan dipakai.
+- Pola fitur admin/aman: fungsi SECURITY DEFINER dengan cek `app.is_owner()`/permission di dalamnya + grant execute ke authenticated; route server-gated dari `bacaSesiPengguna().roleCodes`. Nol policy INSERT/UPDATE untuk client.
 
 ## Known Issues dan Blocker
 
