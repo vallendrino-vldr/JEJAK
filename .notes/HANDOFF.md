@@ -86,11 +86,13 @@ Untuk `pnpm db:test`: set `JEJAK_DB_URL` = URL pooler di atas dulu (scriptnya se
 
 **Docker tidak tersedia** → `supabase start`/`db diff`/local reset tidak jalan. Migration ditulis tangan → apply ke remote pakai cara di atas. Itu sebabnya migration head lokal = yang diterapkan (tidak pakai migration history table CLI).
 
-> **⚠️ BLOCKER APPLY MIGRATION (per 2026-08-21):** Password Database di `JEJAK.md` **gagal auth** ke canonical (`FATAL 28P01 password authentication failed`) via pooler — kemungkinan stale/rotated atau milik project duplikat. MCP Supabase yang ke-connect **hanya punya akun project DUPLIKAT** (`gzmtzdvxerpvetfmqale` "JEJAK" + `hjdctzrvnhvarxoxixrn` "Malesan") — BUKAN canonical `tauyicvfhpfnohhgccvn`. Jadi **DDL ke canonical belum bisa** sampai Product Owner kasih salah satu: (a) DB password canonical yang benar, (b) reset password di dashboard Supabase → kasih yang baru, atau (c) access token / connect MCP ke akun pemilik canonical. Service key (`SUPABASE_SECRET_KEY`) tetap jalan untuk RPC/PostgREST (mis. `grant_credits` sukses), tapi itu tidak bisa DDL. Semua kerja schema (Phase 9 dst) nunggu ini.
+> **✅ APPLY MIGRATION (per 2026-08-21, resolved):** Product Owner reset DB password canonical di dashboard → `JEJAK.md` field `Password Database` sudah diperbarui ke yang valid. Runner baru **`scripts/db-apply.mjs`** = cara resmi apply migration multi-statement sekarang: `node scripts/db-apply.mjs supabase/migrations/<file>.sql` (baca password dari `JEJAK.md`, konek session pooler `aws-0-ap-southeast-1.pooler.supabase.com:5432` user `postgres.tauyicvfhpfnohhgccvn` via `pg`, atomik BEGIN/COMMIT, redact password di semua output). CLI `db query -f` cuma bisa 1 statement (prepared) → jangan dipakai untuk migration. Untuk `pnpm db:test`: `JEJAK_DB_URL=$(node -e '…baca JEJAK.md, susun URL pooler…') pnpm db:test` (jangan taruh password mentah di command).
+>
+> **Catatan:** MCP Supabase yang ke-connect hanya punya akun project DUPLIKAT (`gzmtzdvxerpvetfmqale` + `hjdctzrvnhvarxoxixrn` "Malesan"), BUKAN canonical → `apply_migration`/`execute_sql` MCP menolak canonical. Pakai `scripts/db-apply.mjs`, bukan MCP. Password DB sempat muncul di transcript sesi (Owner ketik + 1x error CLI) — Owner boleh rotate lagi kapan pun (tidak merusak app; app pakai service key), update `JEJAK.md` setelahnya.
 
 ---
 
-## 5. STATUS PER FITUR (per 2026-08-21, commit `cfaea29`, migration head `20260821080000`)
+## 5. STATUS PER FITUR (per 2026-08-21, commit `4e0c1ba`, migration head `20260821090000`)
 
 Empat tingkat: **acceptance-proven** (ada test) · **production-functional** (jalan, teruji manual) · **wired** (nyambung, belum diuji tuntas) · **belum**.
 
@@ -109,7 +111,7 @@ Empat tingkat: **acceptance-proven** (ada test) · **production-functional** (ja
 | Ruang Kendali (admin) | production-functional | Ringkasan/Pengguna/Pemeriksaan/Sumber — owner-only, read-only |
 | PWA install (manifest + ikon) | production-functional | installable. **Service worker + Version Sentinel BELUM** |
 | **Analisa AI (Phase 8)** | wired | Analis DOMAIN jalan: bagian "Analisa" di `/periksa/[ref]` (scan completed) baca RDAP → ringkasan+observasi via Groq `openai/gpt-oss-20b` primary / Gemini `gemini-3.5-flash-lite` failover (~1.5s, keduanya smoke vs data RDAP asli), grounded + fallback rule-based, DI LUAR jalur kredit (route read-only RLS). Teruji: provider live + logika unit + gate hijau + analisa jalan vs data google.com asli. Skeptic/korelasi/graph/asisten belum. Cache: Next Data Cache (`unstable_cache`) 1 jam per-scan. DEC-0127. |
-| **Pembayaran/top-up (Phase 9)** | **BELUM** | beli kredit, transfer manual, approval atomik. Belum ada. |
+| **Pembayaran/top-up (Phase 9)** | sedang jalan | Slice A DONE: `credit_packages` (katalog paket + RLS + seed 4, migration `20260821090000`, test lulus). BELUM: payment_methods (rekening, perlu enkripsi Vault), topup_orders + checkout, upload bukti + storage, Payment Sentinel, approval atomik. Urut di §9B. |
 | Partner (11), Observability/NADI (14), Security hardening (15), QA (16), Rilis (17-18) | belum | |
 
 CI GitHub Actions "Quality Gate" HIJAU di `main`.
