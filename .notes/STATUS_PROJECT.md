@@ -13,15 +13,15 @@
 | Domain produksi | `https://www.cekjejak.my.id` |
 | Mode sesi | RESUME |
 | Current Phase | Periksa 4/5 tipe live · 10 admin (4 view) · 12 hapus/pulihkan kasus · 13 PWA install — semua live |
-| Current Milestone | Vertical slice Domain + RDAP yang durable, aman, dan refundable |
-| Current Branch | `codex/phase7-domain-rdap-hardening` |
-| Baseline Commit | `f996117` — `feat(scan): implement RDAP vertical slice with evidence wiring and settlement` |
-| Latest Checkpoint | commit ini — `fix(workflow): keep internal runner outside auth redirect` |
+| Current Milestone | Cek instan 4/5 tipe + admin + PWA live. Berikutnya: AI (Phase 8) / Payment (Phase 9) |
+| Current Branch | `main` |
+| Latest Commit | lihat `git log -1` (per handoff: `7aeef60`) |
+| Deploy | Vercel auto dari `main`; production sudah build TERBARU (bukan lama). Cek `/api/version`. |
 | Working Tree | Bersih. Git push + DB access dua-duanya jalan (transient tempo hari sudah pulih). |
-| Latest Deploy | Preview checkpoint `2d757b4` sukses; production tetap build lama `5b5fbd4d3e34` |
+| PR #1 | sudah MERGED ke main (bukan draft lagi) |
 | Local Migration Head | `20260821080000_sampah_kasus.sql` |
-| Applied Migration Head | Canonical lama: `20260820150759` (20 migration); duplikat baru tetap kosong |
-| Last Updated | 2026-08-20 oleh Codex |
+| Applied Migration Head | `20260821080000` (25 migration) — sama dengan local head |
+| Last Updated | 2026-08-21 — lihat HANDOFF.md untuk detail akurat |
 
 ## Selesai di Working Tree
 
