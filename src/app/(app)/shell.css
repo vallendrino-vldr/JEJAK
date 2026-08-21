@@ -934,3 +934,10 @@ select.isian {
   line-height: 1;
   color: var(--ivory);
 }
+
+.kendali-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--r3);
+  align-items: center;
+}

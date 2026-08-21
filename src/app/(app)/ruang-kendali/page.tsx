@@ -44,7 +44,10 @@ export default async function RuangKendaliPage() {
         <p className="hero-teks">
           Angka ringkas kondisi JEJAK. Cuma kelihatan buat Owner dan Admin.
         </p>
-        <p className="hero-aksi">
+        <p className="hero-aksi kendali-nav">
+          <Link href="/ruang-kendali/pengguna" className="tombol-utama">
+            Pengguna
+          </Link>
           <Link href="/beranda" className="tombol-sekunder">
             Kembali sebagai Pengguna
           </Link>
