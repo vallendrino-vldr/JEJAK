@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { AnalisaDomain } from "./analisa-domain";
 import { HasilRdap } from "./hasil-rdap";
 import { PembaruanHasil } from "./pembaruan-hasil";
 import styles from "./page.module.css";
@@ -356,22 +357,26 @@ export default async function HasilPemeriksaanPage({
       </header>
 
       {scan.status === "completed" ? (
-        <section className={styles.bagian} aria-labelledby="catatan-rdap-judul">
-          <div className={styles.bagianKepala}>
-            <div>
-              <p className={styles.bagianLabel}>Sumber publik</p>
-              <h2 id="catatan-rdap-judul">Catatan pendaftaran RDAP</h2>
+        <>
+          <section className={styles.bagian} aria-labelledby="catatan-rdap-judul">
+            <div className={styles.bagianKepala}>
+              <div>
+                <p className={styles.bagianLabel}>Sumber publik</p>
+                <h2 id="catatan-rdap-judul">Catatan pendaftaran RDAP</h2>
+              </div>
+              {score !== null ? (
+                <p className={styles.cakupan}>
+                  <span>Kelengkapan analisis</span>
+                  <strong>{score}%</strong>
+                </p>
+              ) : null}
             </div>
-            {score !== null ? (
-              <p className={styles.cakupan}>
-                <span>Kelengkapan analisis</span>
-                <strong>{score}%</strong>
-              </p>
-            ) : null}
-          </div>
 
-          <HasilRdap metadata={rdapRun?.safe_metadata} />
-        </section>
+            <HasilRdap metadata={rdapRun?.safe_metadata} />
+          </section>
+
+          <AnalisaDomain refScan={scan.public_ref} />
+        </>
       ) : null}
 
       {scan.status === "refunded" ? <KartuRefund adaNoResult={adaNoResult} /> : null}

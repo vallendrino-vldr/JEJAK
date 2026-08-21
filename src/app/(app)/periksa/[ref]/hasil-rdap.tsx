@@ -1,17 +1,5 @@
+import { bacaFaktaRdap } from "@/lib/periksa/rdap-fakta";
 import styles from "./page.module.css";
-
-type JsonObject = Record<string, unknown>;
-
-type RdapFacts = {
-  handle?: string;
-  statuses: string[];
-  events: Array<{ action: string; date: string }>;
-  nameservers: string[];
-  registrar?: string;
-  registrantName?: string;
-  registrantOrganization?: string;
-  delegationSigned?: boolean;
-};
 
 const LABEL_STATUS_RDAP: Record<string, string> = {
   active: "Aktif di registri",
@@ -49,78 +37,6 @@ const formatTanggal = new Intl.DateTimeFormat("id-ID", {
   timeZone: "Asia/Jakarta",
 });
 
-function sebagaiObjek(value: unknown): JsonObject | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as JsonObject)
-    : null;
-}
-
-function teksAman(value: unknown, batas = 320): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const hasil = value.trim();
-  return hasil ? hasil.slice(0, batas) : undefined;
-}
-
-function daftarTeks(value: unknown, batasItem = 16): string[] {
-  if (!Array.isArray(value)) return [];
-
-  return [
-    ...new Set(
-      value
-        .slice(0, batasItem)
-        .map((item) => teksAman(item, 320))
-        .filter((item): item is string => Boolean(item)),
-    ),
-  ];
-}
-
-function parseRdapFacts(metadata: unknown): RdapFacts | null {
-  const metadataObject = sebagaiObjek(metadata);
-  const result = sebagaiObjek(metadataObject?.result);
-  if (!result) return null;
-
-  const events = Array.isArray(result.events)
-    ? result.events
-        .slice(0, 20)
-        .map(sebagaiObjek)
-        .filter((item): item is JsonObject => item !== null)
-        .map((item) => ({
-          action: teksAman(item.action, 100),
-          date: teksAman(item.date, 100),
-        }))
-        .filter((item): item is { action: string; date: string } =>
-          Boolean(item.action && item.date),
-        )
-    : [];
-
-  const delegationSigned =
-    typeof result.delegationSigned === "boolean" ? result.delegationSigned : undefined;
-
-  const facts: RdapFacts = {
-    handle: teksAman(result.handle),
-    statuses: daftarTeks(result.statuses),
-    events,
-    nameservers: daftarTeks(result.nameservers),
-    registrar: teksAman(result.registrar),
-    registrantName: teksAman(result.registrantName),
-    registrantOrganization: teksAman(result.registrantOrganization),
-    delegationSigned,
-  };
-
-  const adaIsi = Boolean(
-    facts.handle ||
-    facts.statuses.length ||
-    facts.events.length ||
-    facts.nameservers.length ||
-    facts.registrar ||
-    facts.registrantName ||
-    facts.registrantOrganization ||
-    facts.delegationSigned !== undefined,
-  );
-
-  return adaIsi ? facts : null;
-}
-
 function tanggalRdap(value: string): string | null {
   const tanggal = new Date(value);
   return Number.isNaN(tanggal.getTime()) ? null : formatTanggal.format(tanggal);
@@ -135,7 +51,7 @@ function labelPeristiwaRdap(action: string) {
 }
 
 export function HasilRdap({ metadata }: { metadata: unknown }) {
-  const facts = parseRdapFacts(metadata);
+  const facts = bacaFaktaRdap(metadata);
 
   if (!facts) {
     return (
