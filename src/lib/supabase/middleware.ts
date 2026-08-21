@@ -10,7 +10,7 @@ import { opsiCookieSupabase } from "./cookies";
  * aplikasi bahkan saat pengguna belum login. Isinya hanya nomor versi dan build
  * id, tidak ada data pengguna.
  */
-const RUTE_PUBLIK = ["/", "/masuk", "/auth", "/api/version"];
+const RUTE_PUBLIK = ["/", "/masuk", "/auth", "/api/version", "/manifest.webmanifest"];
 
 function rutePublik(pathname: string) {
   return RUTE_PUBLIK.some((rute) => pathname === rute || pathname.startsWith(`${rute}/`));
