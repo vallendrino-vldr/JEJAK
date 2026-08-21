@@ -22,7 +22,10 @@ declare
     'public.daftar_sumber_kendali()'::regprocedure,
     'public.hapus_kasus(uuid)'::regprocedure,
     'public.pulihkan_kasus(uuid)'::regprocedure,
-    'public.daftar_sampah_kasus()'::regprocedure
+    'public.daftar_sampah_kasus()'::regprocedure,
+    -- Phase 9: kelola rekening (cek izin business.manage_payment_methods).
+    'public.simpan_rekening(text,text,public.payment_method_type,text,text,text,text,boolean,boolean,integer)'::regprocedure,
+    'public.daftar_rekening_kendali()'::regprocedure
   ];
   boundary_worker regprocedure[] := array[
     'public.grant_credits(uuid,integer,integer,public.origin_type,text,timestamptz,text,text)'::regprocedure,
