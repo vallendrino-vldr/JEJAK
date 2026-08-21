@@ -9,14 +9,14 @@
 | Project | JEJAK — alat pemeriksaan jejak digital berbasis bukti |
 | Domain produksi | `https://www.cekjejak.my.id` |
 | Mode sesi | RESUME |
-| Current Phase | Phase 7 (scan domain) live · Phase 10 admin (Ringkasan/Pengguna/Pemeriksaan/Sumber) live · Phase 12 hapus kasus live |
+| Current Phase | 7 scan-domain · 10 admin (4 view) · 12 hapus+pulihkan kasus · 13 PWA install — semua live |
 | Current Milestone | Vertical slice Domain + RDAP yang durable, aman, dan refundable |
 | Current Branch | `codex/phase7-domain-rdap-hardening` |
 | Baseline Commit | `f996117` — `feat(scan): implement RDAP vertical slice with evidence wiring and settlement` |
 | Latest Checkpoint | commit ini — `fix(workflow): keep internal runner outside auth redirect` |
 | Working Tree | Bersih. Git push + DB access dua-duanya jalan (transient tempo hari sudah pulih). |
 | Latest Deploy | Preview checkpoint `2d757b4` sukses; production tetap build lama `5b5fbd4d3e34` |
-| Local Migration Head | `20260821070000_hapus_kasus.sql` |
+| Local Migration Head | `20260821080000_sampah_kasus.sql` |
 | Applied Migration Head | Canonical lama: `20260820150759` (20 migration); duplikat baru tetap kosong |
 | Last Updated | 2026-08-20 oleh Codex |
 
@@ -84,6 +84,19 @@
 | RLS + Ledger live | PASS | 2026-08-20 | Privilege matrix live + suite PostgreSQL hijau |
 | Signed-in browser QA | PARTIAL PASS | 2026-08-20 | Lokal: sesi Google asli, desktop + HP 390×844, success/settle + no-result/refund, saldo 1/reserved 0; preview masih tertahan SSO |
 | Production deploy | NOT DEPLOYED | 2026-08-20 | Build live masih `5b5fbd4d3e34`; batch ini belum didorong |
+
+## Dikirim sesi ini (semua live di production)
+
+- Phase 10 Ruang Kendali (owner-only, read-only): Ringkasan, Pengguna (email termasker), Pemeriksaan, Sumber.
+- Phase 12: hapus kasus ke sampah (reversibel 3 hari) + halaman Sampah + pulihkan.
+- Phase 13: manifest PWA + ikon JEJAK (installable). Service worker + Version Sentinel BELUM (Phase 13 penuh).
+
+## Belum (butuh sesi fokus, jangan difragmentasi)
+
+- Tipe scan selain domain (email/phone/username/nama) — butuh adapter + wiring pipeline durable + scan_products; menyangkut kredit, jadi harus dibangun utuh, bukan sepotong.
+- Phase 8: halaman hasil + analisa AI (Gemini/Groq) dengan Context Pack + grounding.
+- Phase 9: top-up + pembayaran manual (uang — hati-hati, atomic settlement).
+- Phase 11 Partner, 14 Observability/NADI, 15 Security hardening, 16 QA, 17-18 rilis.
 
 ## CARA OPERASIONAL (sesi Agent) — penting
 
