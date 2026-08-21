@@ -70,3 +70,11 @@ export async function tambahPetunjuk(
   revalidatePath(`/kasus/${caseId}`);
   return null;
 }
+
+export async function hapusKasus(formData: FormData): Promise<void> {
+  const caseId = String(formData.get("caseId") ?? "");
+  const supabase = await createSupabaseServerClient();
+  await supabase.rpc("hapus_kasus", { p_case_id: caseId });
+  revalidatePath("/kasus");
+  redirect("/kasus");
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { FormBukti } from "@/components/kasus/form-bukti";
+import { HapusKasus } from "@/components/kasus/hapus-kasus";
 import { FormTambahPetunjuk } from "@/components/kasus/form-kasus";
 import { LABEL_ENTITAS, LABEL_TUJUAN, bacaKasus } from "@/lib/kasus/baca";
 import { KELAS_BUKTI, LABEL_KEANDALAN, LABEL_SUMBER, daftarBukti } from "@/lib/kasus/bukti";
@@ -107,6 +108,17 @@ export default async function DetailKasusPage({ params }: { params: Promise<{ id
             })}
           </ul>
         )}
+      </section>
+
+      <section aria-labelledby="hapus-judul" className="bahaya-zona">
+        <h2 id="hapus-judul" className="bagian-judul">
+          Hapus kasus
+        </h2>
+        <p className="catatan catatan-atas">
+          Kasus masuk sampah dan hilang dari daftar. Masih bisa dibalikin dalam 3 hari sebelum
+          benar-benar terhapus.
+        </p>
+        <HapusKasus caseId={kasus.id} />
       </section>
     </div>
   );
