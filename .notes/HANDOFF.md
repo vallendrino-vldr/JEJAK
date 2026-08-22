@@ -92,7 +92,7 @@ Untuk `pnpm db:test`: set `JEJAK_DB_URL` = URL pooler di atas dulu (scriptnya se
 
 ---
 
-## 5. STATUS PER FITUR (per 2026-08-22, commit `310c970`, migration head `20260821150000`)
+## 5. STATUS PER FITUR (per 2026-08-22, commit `44ac2cd`, migration head `20260821160000`)
 
 Empat tingkat: **acceptance-proven** (ada test) · **production-functional** (jalan, teruji manual) · **wired** (nyambung, belum diuji tuntas) · **belum**.
 
