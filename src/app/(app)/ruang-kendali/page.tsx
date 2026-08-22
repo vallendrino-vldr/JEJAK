@@ -60,6 +60,9 @@ export default async function RuangKendaliPage() {
           <Link href="/ruang-kendali/rekening" className="tombol-utama">
             Rekening
           </Link>
+          <Link href="/ruang-kendali/paket" className="tombol-utama">
+            Paket
+          </Link>
           <Link href="/beranda" className="tombol-sekunder">
             Kembali sebagai Pengguna
           </Link>

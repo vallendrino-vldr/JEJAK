@@ -30,7 +30,10 @@ declare
     'public.submit_proof(text,text,text,text,integer,integer)'::regprocedure,
     'public.approve_topup(text,integer,text,text)'::regprocedure,
     'public.reject_topup(text,text,text)'::regprocedure,
-    'public.daftar_topup_kendali()'::regprocedure
+    'public.daftar_topup_kendali()'::regprocedure,
+    'public.ubah_status_pengguna(uuid,text)'::regprocedure,
+    'public.beri_kredit_pengguna(uuid,integer,text,text)'::regprocedure,
+    'public.simpan_paket(text,text,integer,integer,integer,integer,boolean,text,integer)'::regprocedure
   ];
   boundary_worker regprocedure[] := array[
     'public.grant_credits(uuid,integer,integer,public.origin_type,text,timestamptz,text,text)'::regprocedure,
