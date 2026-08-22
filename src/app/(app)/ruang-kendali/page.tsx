@@ -12,7 +12,16 @@ type Ringkasan = {
   scan_total: number;
   scan_hari_ini: number;
   sumber_terdaftar: number;
+  cuan_hari_ini: number;
+  pembayaran_pending: number;
+  kredit_beredar: number;
 };
+
+const rupiah = new Intl.NumberFormat("id-ID", {
+  style: "currency",
+  currency: "IDR",
+  maximumFractionDigits: 0,
+});
 
 const KARTU: { key: keyof Ringkasan; label: string }[] = [
   { key: "pengguna", label: "Pengguna" },
@@ -69,6 +78,25 @@ export default async function RuangKendaliPage() {
         </p>
       </section>
 
+      <section aria-label="Operasional hari ini" style={{ marginBottom: "1.5rem" }}>
+        <div className="kartu-grid">
+          <div className="kartu kartu-statik">
+            <span className="statik-angka">{rupiah.format(Number(r.cuan_hari_ini ?? 0))}</span>
+            <span className="kartu-teks">Cuan hari ini</span>
+          </div>
+          <div className="kartu kartu-statik">
+            <span className="statik-angka">{Number(r.pembayaran_pending ?? 0)}</span>
+            <span className="kartu-teks">Pembayaran pending</span>
+          </div>
+          <div className="kartu kartu-statik">
+            <span className="statik-angka">
+              {Number(r.kredit_beredar ?? 0).toLocaleString("id-ID")}
+            </span>
+            <span className="kartu-teks">Kredit beredar</span>
+          </div>
+        </div>
+      </section>
+
       <section aria-label="Ringkasan angka">
         <div className="kartu-grid">
           {KARTU.map((k) => (
@@ -78,10 +106,6 @@ export default async function RuangKendaliPage() {
             </div>
           ))}
         </div>
-        <p className="catatan">
-          Konfigurasi lain — paket & rekening, pengelolaan pengguna lanjutan — nyusul di fase
-          berikutnya.
-        </p>
       </section>
     </div>
   );
