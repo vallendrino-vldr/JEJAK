@@ -105,66 +105,25 @@ export default async function PeriksaPage({
           ) : deteksi.jenis === "username" && username ? (
             <>
               <p className="catatan">
-                Cek keberadaan handle di GitHub — instan, gratis. Handle yang sama{" "}
-                <strong>belum tentu</strong> orang yang sama.
+                Cek keberadaan handle di {username.platform.length} layanan publik — instan, gratis.
+                Handle yang sama <strong>belum tentu</strong> orang yang sama.
+              </p>
+              <p className="petunjuk-nilai">
+                {username.ditemukan} ketemu · {username.diperiksa} terperiksa
               </p>
               <dl className="rincian">
-                <div>
-                  <dt>GitHub</dt>
-                  <dd>
-                    {username.github === null
-                      ? "Belum bisa dipastikan"
-                      : username.github
-                        ? "Ada"
-                        : "Tidak ditemukan"}
-                  </dd>
-                </div>
-                {username.githubUrl ? (
-                  <div>
-                    <dt>Profil GitHub</dt>
-                    <dd>{username.githubUrl}</dd>
+                {username.platform.map((p) => (
+                  <div key={p.platform}>
+                    <dt>{p.platform}</dt>
+                    <dd>
+                      {p.ada === null
+                        ? "Belum bisa dipastikan"
+                        : p.ada
+                          ? (p.url ?? "Ada") + (p.catatan ? ` · ${p.catatan}` : "")
+                          : "Tidak ditemukan"}
+                    </dd>
                   </div>
-                ) : null}
-                {username.githubNama ? (
-                  <div>
-                    <dt>Nama di GitHub</dt>
-                    <dd>{username.githubNama}</dd>
-                  </div>
-                ) : null}
-                {username.githubRepo !== null ? (
-                  <div>
-                    <dt>Repositori publik</dt>
-                    <dd>{username.githubRepo}</dd>
-                  </div>
-                ) : null}
-                {username.githubPengikut !== null ? (
-                  <div>
-                    <dt>Pengikut</dt>
-                    <dd>{username.githubPengikut}</dd>
-                  </div>
-                ) : null}
-                {username.githubSejak ? (
-                  <div>
-                    <dt>Akun sejak</dt>
-                    <dd>{username.githubSejak}</dd>
-                  </div>
-                ) : null}
-                <div>
-                  <dt>GitLab</dt>
-                  <dd>
-                    {username.gitlab === null
-                      ? "Belum bisa dipastikan"
-                      : username.gitlab
-                        ? "Ada"
-                        : "Tidak ditemukan"}
-                  </dd>
-                </div>
-                {username.gitlabUrl ? (
-                  <div>
-                    <dt>Profil GitLab</dt>
-                    <dd>{username.gitlabUrl}</dd>
-                  </div>
-                ) : null}
+                ))}
               </dl>
             </>
           ) : deteksi.jenis === "email" && email ? (
@@ -218,6 +177,16 @@ export default async function PeriksaPage({
                     </dd>
                   </div>
                 ) : null}
+                <div>
+                  <dt>Profil Gravatar</dt>
+                  <dd>
+                    {email.gravatar === null
+                      ? "Belum bisa dipastikan"
+                      : email.gravatar
+                        ? (email.gravatarUrl ?? "Ada") + " · email ini dipakai publik"
+                        : "Tidak ada"}
+                  </dd>
+                </div>
               </dl>
             </>
           ) : deteksi.jenis === "nomor_hp" && telepon ? (

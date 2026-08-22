@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { promises as dns } from "node:dns";
 
 // Domain email sekali-pakai yang umum. Bukan daftar lengkap; sinyal, bukan vonis.
@@ -66,12 +67,62 @@ export type CekEmail = {
   penyedia: string | null;
   disposable: boolean;
   peran: boolean;
+  gravatar: boolean | null;
+  gravatarUrl: string | null;
 };
 
+type HasilMx = { punyaMx: boolean | null; mxHost: string | null; penyedia: string | null };
+
+async function lookupMx(domain: string): Promise<HasilMx> {
+  try {
+    const mx = (await Promise.race([
+      dns.resolveMx(domain),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 3000)),
+    ])) as { exchange: string; priority: number }[];
+
+    const urut = mx.slice().sort((a, b) => a.priority - b.priority);
+    const mxHost = urut[0]?.exchange ?? null;
+    return { punyaMx: urut.length > 0, mxHost, penyedia: penyediaDariMx(mxHost) };
+  } catch (galat) {
+    const code = (galat as { code?: string }).code;
+    if (code === "ENOTFOUND" || code === "ENODATA") {
+      return { punyaMx: false, mxHost: null, penyedia: null };
+    }
+    return { punyaMx: null, mxHost: null, penyedia: null };
+  }
+}
+
 /**
- * Cek email lokal + lookup MX + sinyal ringan (disposable, akun peran, penyedia).
- *
- * DNS-only (bukan fetch URL) jadi bukan SSRF, timeout, gratis, di luar pipeline
+ * Cek keberadaan profil Gravatar dari hash email. Host tetap (gravatar.com),
+ * bukan SSRF. 200 = ada profil publik (sinyal email dipakai + kadang ada akun
+ * tertaut), 404 = tidak ada. Bukan bukti kepemilikan.
+ */
+async function cekGravatar(email: string): Promise<{ ada: boolean | null; url: string | null }> {
+  const hash = createHash("md5").update(email).digest("hex");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3500);
+  try {
+    const res = await fetch(`https://gravatar.com/${hash}.json`, {
+      headers: {
+        "User-Agent": "JEJAK/1.0 (+https://www.cekjejak.my.id)",
+        Accept: "application/json",
+      },
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    if (res.status === 200) return { ada: true, url: `https://gravatar.com/${hash}` };
+    if (res.status === 404) return { ada: false, url: null };
+    return { ada: null, url: null };
+  } catch {
+    return { ada: null, url: null };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Cek email: format + MX + Gravatar + sinyal ringan (disposable, peran,
+ * penyedia). DNS/host tetap → bukan SSRF. Instan, gratis, di luar pipeline
  * kredit. Semua sinyal, bukan kesimpulan.
  */
 export async function cekEmail(email: string): Promise<CekEmail> {
@@ -86,52 +137,24 @@ export async function cekEmail(email: string): Promise<CekEmail> {
       penyedia: null,
       disposable: false,
       peran: false,
+      gravatar: null,
+      gravatarUrl: null,
     };
   }
 
   const local = m[1];
   const domain = m[2];
-  const disposable = DISPOSABLE.has(domain);
-  const peran = ROLE_LOCAL.has(local);
+  const [mx, grav] = await Promise.all([lookupMx(domain), cekGravatar(rapi)]);
 
-  try {
-    const mx = (await Promise.race([
-      dns.resolveMx(domain),
-      new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 3000)),
-    ])) as { exchange: string; priority: number }[];
-
-    const urut = mx.slice().sort((a, b) => a.priority - b.priority);
-    const mxHost = urut[0]?.exchange ?? null;
-    return {
-      formatValid: true,
-      domain,
-      punyaMx: urut.length > 0,
-      mxHost,
-      penyedia: penyediaDariMx(mxHost),
-      disposable,
-      peran,
-    };
-  } catch (galat) {
-    const code = (galat as { code?: string }).code;
-    if (code === "ENOTFOUND" || code === "ENODATA") {
-      return {
-        formatValid: true,
-        domain,
-        punyaMx: false,
-        mxHost: null,
-        penyedia: null,
-        disposable,
-        peran,
-      };
-    }
-    return {
-      formatValid: true,
-      domain,
-      punyaMx: null,
-      mxHost: null,
-      penyedia: null,
-      disposable,
-      peran,
-    };
-  }
+  return {
+    formatValid: true,
+    domain,
+    punyaMx: mx.punyaMx,
+    mxHost: mx.mxHost,
+    penyedia: mx.penyedia,
+    disposable: DISPOSABLE.has(domain),
+    peran: ROLE_LOCAL.has(local),
+    gravatar: grav.ada,
+    gravatarUrl: grav.url,
+  };
 }
