@@ -103,23 +103,23 @@ export default async function KendaliPembayaranPage() {
                   <p className="catatan">Bukti belum tersedia.</p>
                 )}
 
-                <div className="hero-aksi" style={{ marginTop: "0.5rem" }}>
-                  <form action={setujuiAction}>
+                <div className="kendali-aksi">
+                  <form action={setujuiAction} className="form-sebaris">
                     <input type="hidden" name="ref" value={r.public_ref} />
-                    <button type="submit" className="tombol-utama">
+                    <button type="submit" className="tombol-utama tombol-kecil">
                       Setujui
                     </button>
                   </form>
-                  <form action={tolakAction} style={{ display: "flex", gap: "0.5rem" }}>
+                  <form action={tolakAction} className="form-sebaris">
                     <input type="hidden" name="ref" value={r.public_ref} />
                     <input
+                      className="isian"
                       name="alasan"
                       type="text"
                       placeholder="Alasan tolak"
                       maxLength={200}
-                      style={{ minWidth: "10rem" }}
                     />
-                    <button type="submit" className="tombol-sekunder">
+                    <button type="submit" className="tombol-sekunder tombol-kecil">
                       Tolak
                     </button>
                   </form>

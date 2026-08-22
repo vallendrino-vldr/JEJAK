@@ -130,7 +130,7 @@ export default async function OrderTopUpPage({
           ) : null}
 
           <section className="kartu" aria-label="Upload bukti transfer">
-            <form action={kirimBuktiAction}>
+            <form action={kirimBuktiAction} className="form">
               <input type="hidden" name="ref" value={order.public_ref} />
               <label className="kartu-teks" htmlFor="bukti">
                 Upload bukti transfer (JPG/PNG/WebP, maks 5MB)
@@ -141,7 +141,7 @@ export default async function OrderTopUpPage({
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 required
-                style={{ display: "block", margin: "0.75rem 0" }}
+                style={{ maxWidth: "100%" }}
               />
               <button type="submit" className="tombol-utama">
                 Kirim bukti

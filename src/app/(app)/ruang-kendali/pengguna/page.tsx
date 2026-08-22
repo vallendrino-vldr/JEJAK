@@ -73,50 +73,41 @@ export default async function KendaliPenggunaPage() {
                 </p>
 
                 {owner ? (
-                  <div
-                    className="hero-aksi"
-                    style={{ marginTop: "0.5rem", flexWrap: "wrap", gap: "0.75rem" }}
-                  >
-                    <form
-                      action={beriKreditAction}
-                      style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
-                    >
+                  <div className="kendali-aksi">
+                    <form action={beriKreditAction} className="form-sebaris">
                       <input type="hidden" name="user_id" value={u.id} />
                       <input type="hidden" name="nonce" value={randomUUID()} />
                       <input
+                        className="isian"
                         name="kredit"
                         type="number"
                         min={1}
                         max={100000}
-                        placeholder="kredit"
+                        placeholder="Jumlah kredit"
                         required
-                        style={{ width: "6rem" }}
                       />
                       <input
+                        className="isian"
                         name="alasan"
                         type="text"
-                        placeholder="alasan"
+                        placeholder="Alasan (opsional)"
                         maxLength={200}
-                        style={{ width: "9rem" }}
                       />
-                      <button type="submit" className="tombol-utama">
-                        Grant
+                      <button type="submit" className="tombol-utama tombol-kecil">
+                        Grant kredit
                       </button>
                     </form>
 
-                    <form
-                      action={ubahStatusAction}
-                      style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
-                    >
+                    <form action={ubahStatusAction} className="form-sebaris">
                       <input type="hidden" name="user_id" value={u.id} />
-                      <select name="status" defaultValue={u.status}>
+                      <select className="isian" name="status" defaultValue={u.status}>
                         {STATUS_PILIH.map((s) => (
                           <option key={s} value={s}>
                             {LABEL_STATUS[s]}
                           </option>
                         ))}
                       </select>
-                      <button type="submit" className="tombol-sekunder">
+                      <button type="submit" className="tombol-sekunder tombol-kecil">
                         Ubah status
                       </button>
                     </form>

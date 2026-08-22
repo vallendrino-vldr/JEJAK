@@ -91,36 +91,55 @@ export default async function KendaliRekeningPage({
       >
         <h2 className="kartu-teks">Tambah / ubah rekening</h2>
         <p className="kartu-meta">Kode yang sama akan menimpa rekening yang ada.</p>
-        <form
-          action={simpanRekeningAction}
-          style={{ display: "grid", gap: "0.75rem", marginTop: "0.75rem" }}
-        >
-          <input name="code" placeholder="kode unik (mis. bca_utama)" required maxLength={50} />
+        <form action={simpanRekeningAction} className="form" style={{ marginTop: "var(--r4)" }}>
           <input
+            className="isian"
+            name="code"
+            placeholder="Kode unik (mis. bca_utama)"
+            required
+            maxLength={50}
+          />
+          <input
+            className="isian"
             name="display_name"
             placeholder="Nama tampilan (mis. BCA)"
             required
             maxLength={100}
           />
-          <select name="method_type" defaultValue="bank_transfer">
+          <select className="isian" name="method_type" defaultValue="bank_transfer">
             <option value="bank_transfer">Transfer Bank</option>
             <option value="ewallet">E-Wallet</option>
             <option value="qris">QRIS</option>
           </select>
           <input
+            className="isian"
             name="institution_name"
             placeholder="Bank/penyedia (mis. BCA)"
             required
             maxLength={100}
           />
-          <input name="account_number" placeholder="Nomor rekening" required maxLength={50} />
-          <input name="account_holder_name" placeholder="Atas nama" required maxLength={120} />
+          <input
+            className="isian"
+            name="account_number"
+            placeholder="Nomor rekening"
+            required
+            maxLength={50}
+          />
+          <input
+            className="isian"
+            name="account_holder_name"
+            placeholder="Atas nama"
+            required
+            maxLength={120}
+          />
           <textarea
+            className="isian"
             name="instructions"
             placeholder="Instruksi tambahan (opsional)"
             maxLength={500}
+            rows={3}
           />
-          <label style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <label className="form-centang">
             <input type="checkbox" name="is_primary" /> Jadikan rekening utama
           </label>
           <button type="submit" className="tombol-utama">

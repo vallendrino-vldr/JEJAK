@@ -942,6 +942,27 @@ select.isian {
   align-items: center;
 }
 
+/* Aksi admin per-baris (grant kredit, ubah status): tumpuk rapi, wrap di layar
+ * sempit. Tidak pernah pakai lebar tetap yang bikin overflow horizontal. */
+.kendali-aksi {
+  display: grid;
+  gap: var(--r3);
+  margin-top: var(--r3);
+  padding-top: var(--r3);
+  border-top: 1px solid var(--garis);
+}
+
+.kendali-aksi .form-sebaris {
+  margin-bottom: 0;
+}
+
+/* Aturan `min-width: 0` mencegah anak flex/grid memaksa halaman melebar di
+ * mobile — akar masalah "layout desktop nongol di HP". */
+.shell-workspace,
+.ruang {
+  min-width: 0;
+}
+
 .bahaya-zona {
   padding-top: var(--r4);
   border-top: 1px solid var(--garis);

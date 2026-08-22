@@ -100,15 +100,39 @@ export default async function KendaliPaketPage({
 
       <section className="kartu" aria-label="Tambah / ubah paket" style={{ marginTop: "1.5rem" }}>
         <h2 className="kartu-teks">Tambah / ubah paket</h2>
-        <form
-          action={simpanPaketAction}
-          style={{ display: "grid", gap: "0.75rem", marginTop: "0.75rem" }}
-        >
-          <input name="code" placeholder="kode (mis. proteksi)" required maxLength={50} />
-          <input name="name" placeholder="Nama tampilan" required maxLength={100} />
-          <input name="price_idr" type="number" min={0} placeholder="Harga (IDR)" required />
-          <input name="base_credits" type="number" min={0} placeholder="Kredit dasar" required />
+        <form action={simpanPaketAction} className="form" style={{ marginTop: "var(--r4)" }}>
           <input
+            className="isian"
+            name="code"
+            placeholder="Kode (mis. proteksi)"
+            required
+            maxLength={50}
+          />
+          <input
+            className="isian"
+            name="name"
+            placeholder="Nama tampilan"
+            required
+            maxLength={100}
+          />
+          <input
+            className="isian"
+            name="price_idr"
+            type="number"
+            min={0}
+            placeholder="Harga (IDR)"
+            required
+          />
+          <input
+            className="isian"
+            name="base_credits"
+            type="number"
+            min={0}
+            placeholder="Kredit dasar"
+            required
+          />
+          <input
+            className="isian"
             name="bonus_credits"
             type="number"
             min={0}
@@ -116,21 +140,28 @@ export default async function KendaliPaketPage({
             defaultValue={0}
           />
           <input
+            className="isian"
             name="validity_days"
             type="number"
             min={1}
             placeholder="Masa berlaku (hari)"
             required
           />
-          <input name="badge_text" placeholder="Badge (opsional, mis. Populer)" maxLength={40} />
           <input
+            className="isian"
+            name="badge_text"
+            placeholder="Badge (opsional, mis. Populer)"
+            maxLength={40}
+          />
+          <input
+            className="isian"
             name="display_order"
             type="number"
             min={0}
             placeholder="Urutan tampil"
             defaultValue={0}
           />
-          <label style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <label className="form-centang">
             <input type="checkbox" name="active" defaultChecked /> Aktif
           </label>
           <button type="submit" className="tombol-utama">
